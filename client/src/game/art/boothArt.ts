@@ -32,9 +32,8 @@ type Ctx = CanvasRenderingContext2D;
 
 /**
  * Copy a video frame into (x, y, w, h), cropped to fill (like CSS
- * object-fit: cover). The live preview is mirrored like a selfie, but saved
- * photos are not (mirror = false) — same as a phone camera — so any writing
- * on a shirt reads the right way.
+ * object-fit: cover). mirror = true flips it like a selfie, matching the
+ * live preview (that's what the photo booth saves).
  */
 export function drawVideoCover(ctx: Ctx, video: HTMLVideoElement, x: number, y: number, w: number, h: number, mirror = false) {
   const vw = video.videoWidth, vh = video.videoHeight;

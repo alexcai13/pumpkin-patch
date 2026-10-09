@@ -52,6 +52,12 @@ export class PhotoBooth extends Phaser.Scene {
   private unbindSnap?: () => void;
   private failedAt = 0;
   private theme: StripTheme = "Harvest";
+  /** Runs the connection logic even while this tab is in the background. */
+  private logicTimer?: number;
+  private lastEnterSent = 0;
+  /** Set when the server refused to let us in (see "booth:denied"). */
+  private deniedReason = "";
+  private unbindDenied?: () => void;
   private themeBtns: HTMLButtonElement[] = [];
 
   constructor() {
@@ -65,6 +71,8 @@ export class PhotoBooth extends Phaser.Scene {
     this.lastPhase = "";
     this.lastCount = -1;
     this.themeBtns = [];
+    this.lastEnterSent = 0;
+    this.deniedReason = "";
   }
 
   create() {
@@ -73,15 +81,27 @@ export class PhotoBooth extends Phaser.Scene {
     // booth, so we can't miss our friend's first message.
     this.rtc = new BoothRtc(room);
     this.unbindSnap = room.onMessage("booth:snap", (msg: SnapMessage) => this.snap(msg.shot));
+    this.unbindDenied = room.onMessage("booth:denied", (msg: { reason: string }) => { this.deniedReason = msg.reason; });
     this.buildDom();
-    room.send("booth:enter");
+    this.sendEnter();
     void this.rtc.startCamera();
+
+    // Phaser pauses update() while a tab is in the background (e.g. two
+    // players testing in two tabs of one window). The connection logic must
+    // keep running anyway, so it also runs on a plain timer.
+    this.logicTimer = window.setInterval(() => this.logic(), 400);
 
     this.input.keyboard!.on("keydown-ESC", () => this.close());
     this.events.once("shutdown", () => this.cleanup());
   }
 
   private me() { return Network.room!.state.players.get(Network.room!.sessionId); }
+
+  /** Ask the server to let us into the booth. */
+  private sendEnter() {
+    this.lastEnterSent = performance.now();
+    Network.room!.send("booth:enter");
+  }
 
   /** Players ordered by slot: [left, right] (either may be missing). */
   private bySlot(): (PlayerState | undefined)[] {
@@ -160,20 +180,28 @@ export class PhotoBooth extends Phaser.Scene {
     };
   }
 
-  // ------------------------------------------------------------------ every frame
+  // ------------------------------------------------------------------ logic (also runs in background tabs)
 
-  update() {
+  /** Are both players in the booth (so video should be connected)? */
+  private together() {
+    const me = this.me();
+    const friend = this.bySlot().find((p) => p && p !== me);
+    return !!friend?.inBooth && friend.connected;
+  }
+
+  private logic() {
     const room = Network.room;
     if (!room || !this.root) return;
     const me = this.me();
     if (!me) return;
-    const players = this.bySlot();
-    const friend = players.find((p) => p && p !== me);
+
+    // Didn't get in yet (message lost, or we were still walking)? Ask again.
+    if (!me.inBooth && !this.deniedReason && performance.now() - this.lastEnterSent > 2000) this.sendEnter();
 
     // WebRTC: the slot-0 player calls once both are in the booth.
     // (We're in the booth as long as this screen is open — we don't wait for
     // the server to echo our own inBooth, or an early offer could be dropped.)
-    const together = !!friend?.inBooth && friend.connected;
+    const together = this.together();
     if (!together && this.rtc.status !== "idle") this.rtc.disconnect();
     if (together && me.inBooth && me.slot === 0 && this.rtc.status === "idle") void this.rtc.connect();
     // If the connection failed, the caller tries again every few seconds.
@@ -182,7 +210,26 @@ export class PhotoBooth extends Phaser.Scene {
       if (performance.now() - this.failedAt > 3000) { this.failedAt = 0; this.rtc.disconnect(); }
     }
 
-    players.forEach((p, slot) => this.syncPanel(this.panels[slot], p, p === me, together));
+    // Keep each camera panel showing the right stream/status.
+    this.bySlot().forEach((p, slot) => this.syncPanel(this.panels[slot], p, p === me, together));
+
+    // Shoot started / finished.
+    const booth = room.state.booth;
+    if (booth.phase !== this.lastPhase) {
+      if (booth.phase === "shooting") { this.frames = []; this.resultEl.hidden = true; }
+      if (booth.phase === "done" && this.frames.some(Boolean)) void this.showStrip();
+      this.lastPhase = booth.phase;
+    }
+  }
+
+  // ------------------------------------------------------------------ every frame (visuals)
+
+  update() {
+    const room = Network.room;
+    if (!room || !this.root) return;
+    const me = this.me();
+    if (!me) return;
+    this.logic();
 
     // Countdown + shutter.
     const booth = room.state.booth;
@@ -196,11 +243,6 @@ export class PhotoBooth extends Phaser.Scene {
       this.countEl.classList.remove("pop");
       void this.countEl.offsetWidth; // restart the CSS animation
       if (count > 0) this.countEl.classList.add("pop");
-    }
-    if (booth.phase !== this.lastPhase) {
-      if (booth.phase === "shooting") { this.frames = []; this.resultEl.hidden = true; }
-      if (booth.phase === "done" && this.lastPhase === "shooting") void this.showStrip();
-      this.lastPhase = booth.phase;
     }
   }
 
@@ -223,10 +265,12 @@ export class PhotoBooth extends Phaser.Scene {
     }
 
 
-    panel.name.textContent = player ? (isMe ? `${player.name} (you)` : player.name) : "Waiting for a friend…";
+    panel.name.textContent = player ? (isMe ? `${player.name} (you)` : player.name) : "No one here yet";
     panel.name.style.color = player ? PLAYER_COLORS[player.color].main : "";
     let status = "";
     if (!player) status = "Invite your friend to the booth!";
+    else if (isMe && this.deniedReason) status = this.deniedReason;
+    else if (isMe && !player.inBooth) status = "Joining the booth…";
     else if (isMe && this.rtc.cameraError) status = `${this.rtc.cameraError} You'll appear as your character.`;
     else if (isMe && !this.rtc.localStream) status = "Starting your camera… (allow access if asked)";
     else if (!isMe && !player.inBooth) status = `${player.name} isn't in the booth yet — walk them over!`;
@@ -258,7 +302,8 @@ export class PhotoBooth extends Phaser.Scene {
     ctx.fillRect(0, 0, FRAME_W, HALF_H);
     this.panels.forEach((panel, slot) => {
       const x = slot * (HALF_W + DIVIDER);
-      const ok = panel.video.style.visibility === "visible" && drawVideoCover(ctx, panel.video, x, 0, HALF_W, HALF_H);
+      // Mirrored, exactly like the live preview you posed in front of.
+      const ok = panel.video.videoWidth > 0 && !!panel.video.srcObject && drawVideoCover(ctx, panel.video, x, 0, HALF_W, HALF_H, true);
       if (!ok) ctx.drawImage(panel.standIn, x, 0);
     });
     this.frames[shot - 1] = frame;
@@ -302,7 +347,9 @@ export class PhotoBooth extends Phaser.Scene {
 
   private cleanup() {
     Network.room?.send("booth:leave");
+    window.clearInterval(this.logicTimer);
     this.unbindSnap?.();
+    this.unbindDenied?.();
     this.rtc.destroy();
     this.panels.forEach((p) => { p.video.srcObject = null; });
     this.root?.remove();

@@ -38,9 +38,17 @@ export class PhotoBooth {
 
   private enter(client: Client) {
     const player = this.room.state.players.get(client.sessionId);
-    if (!player || this.room.isBusy(player)) return;
-    // Must be standing in (or right in front of) the booth.
-    if (this.room.tileDistance(player, INSIDE.x, INSIDE.y) > 2.1) return;
+    if (!player || player.inBooth) return;
+    if (this.room.isBusy(player)) {
+      client.send("booth:denied", { reason: "Get off the bench / wagon first, then come back to the booth." });
+      return;
+    }
+    // Must be standing in (or right in front of) the booth. A little slack,
+    // because the server's copy of your position can be a step behind.
+    if (this.room.tileDistance(player, INSIDE.x, INSIDE.y) > 3) {
+      client.send("booth:denied", { reason: "Step inside the booth frame, then press E again." });
+      return;
+    }
     player.inBooth = true;
   }
 
