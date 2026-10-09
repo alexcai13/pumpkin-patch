@@ -6,6 +6,7 @@ import { Network } from "../net/Network";
 import { BoothRtc } from "../net/BoothRtc";
 import {
   HALF_W, HALF_H, DIVIDER, FRAME_W, drawVideoCover, drawCharacterStandIn, buildStrip,
+  STRIP_THEMES, SCRIPT_FONT, type StripTheme,
 } from "../art/boothArt";
 import { playerTextureKey } from "../art/ArtLoader";
 import { CHAR_W, CHAR_H } from "../art/characters";
@@ -30,8 +31,8 @@ interface Panel {
  * webcam and their friend's live webcam side by side, and either one
  * presses the timer. The server counts 3-2-1 four
  * times; at each "snap" this browser grabs both video feeds into one photo
- * (left half = player 1, right half = player 2). After 4 photos you get a
- * fall-themed strip to download.
+ * (left half = player 1, right half = player 2). After 3 photos you get a
+ * fall photo strip to download, in one of three styles (STRIP_THEMES).
  *
  * The UI is HTML layered on the canvas (video elements are much easier in
  * HTML than in Phaser). Styles: public/style.css, "pb-" classes.
@@ -50,6 +51,8 @@ export class PhotoBooth extends Phaser.Scene {
   private lastCount = -1;
   private unbindSnap?: () => void;
   private failedAt = 0;
+  private theme: StripTheme = "Harvest";
+  private themeBtns: HTMLButtonElement[] = [];
 
   constructor() {
     super("PhotoBooth");
@@ -61,6 +64,7 @@ export class PhotoBooth extends Phaser.Scene {
     this.panels = [];
     this.lastPhase = "";
     this.lastCount = -1;
+    this.themeBtns = [];
   }
 
   create() {
@@ -96,13 +100,14 @@ export class PhotoBooth extends Phaser.Scene {
         <h2 class="pb-title">📸 Photo Booth</h2>
         <div class="pb-cams"></div>
         <div class="pb-actions">
-          <button class="pp-btn pp-primary pb-start">Start timer (4 photos)</button>
+          <button class="pp-btn pp-primary pb-start">Start timer (3 photos)</button>
           <button class="pp-btn pb-close">Leave booth</button>
         </div>
         <div class="pb-count"></div>
         <div class="pb-flash"></div>
         <div class="pb-result" hidden>
           <img class="pb-strip" alt="Your photo strip" />
+          <div class="pb-themes"></div>
           <div class="pb-actions">
             <a class="pp-btn pp-primary pb-download" download="pumpkin-patch-photos.png">Download strip</a>
             <button class="pp-btn pb-again">Take more</button>
@@ -130,6 +135,17 @@ export class PhotoBooth extends Phaser.Scene {
         status: panel.querySelector(".pb-status")!,
         shown: { stream: null, standInKey: "" },
       });
+    }
+
+    // Strip style buttons (re-draw the same photos in a different style).
+    const themes = root.querySelector<HTMLDivElement>(".pb-themes")!;
+    for (const theme of STRIP_THEMES) {
+      const b = document.createElement("button");
+      b.className = "pp-btn pb-theme-btn";
+      b.textContent = theme;
+      b.onclick = () => { this.theme = theme; void this.showStrip(); };
+      themes.appendChild(b);
+      this.themeBtns.push(b);
     }
 
     this.countEl = root.querySelector(".pb-count")!;
@@ -172,7 +188,7 @@ export class PhotoBooth extends Phaser.Scene {
     const booth = room.state.booth;
     const shooting = booth.phase === "shooting";
     this.startBtn.disabled = shooting;
-    this.startBtn.textContent = shooting ? `Photo ${booth.shot} of ${BOOTH.shots}…` : "Start timer (4 photos)";
+    this.startBtn.textContent = shooting ? `Photo ${booth.shot} of ${BOOTH.shots}…` : "Start timer (3 photos)";
     const count = shooting ? booth.countdown : 0;
     if (count !== this.lastCount) {
       this.lastCount = count;
@@ -183,7 +199,7 @@ export class PhotoBooth extends Phaser.Scene {
     }
     if (booth.phase !== this.lastPhase) {
       if (booth.phase === "shooting") { this.frames = []; this.resultEl.hidden = true; }
-      if (booth.phase === "done" && this.lastPhase === "shooting") this.showStrip();
+      if (booth.phase === "done" && this.lastPhase === "shooting") void this.showStrip();
       this.lastPhase = booth.phase;
     }
   }
@@ -253,14 +269,20 @@ export class PhotoBooth extends Phaser.Scene {
     this.flashEl.classList.add("flash");
   }
 
-  private showStrip() {
+  private async showStrip() {
     const players = this.bySlot().filter((p): p is PlayerState => !!p);
     // If we joined mid-shoot some photos are missing; fill with stand-ins.
     const frames = Array.from({ length: BOOTH.shots }, (_, i) => this.frames[i] ?? this.standInFrame());
-    const strip = buildStrip(frames, players.map((p) => p.name), new Date());
+    this.frames = frames;
+    // Make sure the handwriting font is ready before drawing text with it.
+    await document.fonts.load(`700 40px ${SCRIPT_FONT}`).catch(() => {});
+    this.themeBtns.forEach((b, i) => b.classList.toggle("selected", STRIP_THEMES[i] === this.theme));
+    const strip = buildStrip(frames, players.map((p) => p.name), new Date(), this.theme);
     const url = strip.toDataURL("image/png");
     this.resultEl.querySelector<HTMLImageElement>(".pb-strip")!.src = url;
-    this.resultEl.querySelector<HTMLAnchorElement>(".pb-download")!.href = url;
+    const download = this.resultEl.querySelector<HTMLAnchorElement>(".pb-download")!;
+    download.href = url;
+    download.download = `pumpkin-patch-${this.theme.toLowerCase()}-strip.png`;
     this.resultEl.hidden = false;
   }
 

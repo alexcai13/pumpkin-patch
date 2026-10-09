@@ -141,7 +141,7 @@ describe("Activities", () => {
     assert.ok(Math.abs(player.x - (room.state.hayride.x + HAYRIDE.seats[0].x)) < 0.01);
   });
 
-  it("photo booth: relays rtc between members and takes 4 snaps", async () => {
+  it("photo booth: relays rtc between members and takes every snap", async () => {
     const room = await colyseus.createRoom<PatchState>("patch", {});
     const a = await colyseus.connectTo(room, { name: "A" });
     const b = await colyseus.connectTo(room, { name: "B" });
@@ -166,8 +166,8 @@ describe("Activities", () => {
     a.onMessage("booth:snap", (m) => snaps.push(m.shot));
     room.state.booth.phase = "idle";
     a.send("booth:start");
-    await wait(4 * (BOOTH.countdownSeconds * 1000 + BOOTH.pauseMs) + 400);
-    assert.deepStrictEqual(snaps, [1, 2, 3, 4]);
+    await wait(BOOTH.shots * (BOOTH.countdownSeconds * 1000 + BOOTH.pauseMs) + 400);
+    assert.deepStrictEqual(snaps, Array.from({ length: BOOTH.shots }, (_, i) => i + 1));
     assert.strictEqual(room.state.booth.phase, "done");
   }).timeout(30000);
 });

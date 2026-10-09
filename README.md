@@ -51,7 +51,7 @@ facing (a prompt shows when something's usable), **1-4** for emotes.
 | Pumpkin picking race | Pumpkin Field sign | `activities/PickingRace.ts` | `world/activities/RaceView.ts`, `scenes/RaceHud.ts` |
 | Carving station | tables on the porch | `activities/Carving.ts` | `scenes/Carving.ts`, `world/activities/PorchView.ts` |
 | Look at carvings | finished pumpkins on the porch | (synced in state) | `scenes/CarvingViewer.ts` |
-| Photo booth (live webcams, 4-photo strip) | inside the booth frame | `activities/PhotoBooth.ts` | `scenes/PhotoBooth.ts`, `net/BoothRtc.ts`, `art/boothArt.ts` |
+| Photo booth (live webcams, 3-photo strip) | inside the booth frame | `activities/PhotoBooth.ts` | `scenes/PhotoBooth.ts`, `net/BoothRtc.ts`, `art/boothArt.ts` |
 | Cider stand benches | benches by the cider stand | `activities/Benches.ts` | `world/activities/BenchView.ts`, `scenes/CiderCozy.ts` |
 | Hayride | wagon at the Hayride sign | `activities/Hayride.ts` | `world/activities/HayrideView.ts` |
 

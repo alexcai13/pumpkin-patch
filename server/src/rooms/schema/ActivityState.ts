@@ -61,7 +61,7 @@ export type HayrideState = SchemaType<typeof HayrideState>;
 export const BoothState = schema({
   /** "idle" → "shooting" → "done" (strip ready) → back to "idle" on the next start */
   phase: t.string().default("idle"),
-  /** Which of the 4 photos is coming up (1-4) while shooting. */
+  /** Which photo is coming up (1 to BOOTH.shots) while shooting. */
   shot: t.uint8(),
   /** 3, 2, 1 before each photo; 0 at the moment it's taken. */
   countdown: t.uint8(),

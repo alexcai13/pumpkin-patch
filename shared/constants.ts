@@ -74,7 +74,7 @@ export const CARVE_H = 24;
 
 /** Photo booth: how the shoot is timed. */
 export const BOOTH = {
-  shots: 4,
+  shots: 3,
   countdownSeconds: 3,
   /** Pause after each photo before the next countdown. */
   pauseMs: 1200,
