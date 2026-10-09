@@ -28,6 +28,15 @@ describe("PatchRoom", () => {
     assert.strictEqual(player.x, PATCH_MAP.spawns[0].x * TILE + TILE / 2);
   });
 
+  it("keeps the room (and its code) alive after the only player leaves", async () => {
+    const room = await colyseus.createRoom<PatchState>("patch", {});
+    const host = await colyseus.connectTo(room, { name: "Host" });
+    await host.leave();
+    await new Promise((r) => setTimeout(r, 200));
+    const friend = await colyseus.connectTo(room, { name: "Friend" });
+    assert.ok(room.state.players.get(friend.sessionId), "friend joined the empty room");
+  });
+
   it("allows at most 2 players", async () => {
     const room = await colyseus.createRoom<PatchState>("patch", {});
     await colyseus.connectTo(room, { name: "A" });

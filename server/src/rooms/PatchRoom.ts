@@ -1,4 +1,4 @@
-import { Room, Client, CloseCode } from "colyseus";
+import { Room, Client, CloseCode, type Delayed } from "colyseus";
 import { PatchState } from "./schema/PatchState.js";
 import { PlayerState } from "./schema/PlayerState.js";
 import { RaceState, HayrideState, BoothState } from "./schema/ActivityState.js";
@@ -37,6 +37,15 @@ export class PatchRoom extends Room<{ state: PatchState }> {
 
   /** Seconds the server holds a dropped player's seat before removing them. */
   static RECONNECT_SECONDS = 15;
+
+  /**
+   * How long an EMPTY room (and its code) stays alive. Without this, the room
+   * vanished the instant its only player refreshed or closed the tab, and
+   * the friend typing the code got "no patch found". Carvings etc. survive too.
+   */
+  static EMPTY_ROOM_SECONDS = 120;
+  autoDispose = false;
+  private emptyTimer?: Delayed;
 
   /**
    * Walkability for THIS room. Each room has its own copy because some things
@@ -103,10 +112,12 @@ export class PatchRoom extends Room<{ state: PatchState }> {
 
     // 20 updates per second for things that move on their own (the wagon).
     this.setSimulationInterval((dt) => this.hayride.update(dt), 50);
+    this.startEmptyTimer(); // in case the creator never actually arrives
     console.log(`room ${this.roomId} created`);
   }
 
   onJoin(client: Client, options: JoinOptions) {
+    this.emptyTimer?.clear();
     // Take the first free slot (0 or 1); it decides spawn point and basket.
     const taken = new Set([...this.state.players.values()].map((p) => p.slot));
     const slot = taken.has(0) ? 1 : 0;
@@ -167,6 +178,15 @@ export class PatchRoom extends Room<{ state: PatchState }> {
     this.guards.delete(client.sessionId);
     // Someone who left can no longer be "missing" from the wagon.
     this.hayride.onPlayerLeave();
+    if (this.state.players.size === 0) this.startEmptyTimer();
+  }
+
+  /** Close the room if nobody (re)joins within EMPTY_ROOM_SECONDS. */
+  private startEmptyTimer() {
+    this.emptyTimer?.clear();
+    this.emptyTimer = this.clock.setTimeout(() => {
+      if (this.clients.length === 0) void this.disconnect();
+    }, PatchRoom.EMPTY_ROOM_SECONDS * 1000);
   }
 
   onDispose() {

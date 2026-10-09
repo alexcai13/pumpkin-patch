@@ -64,7 +64,9 @@ export function normalizeCode(code: string) {
 /** Turns a Colyseus error into something friendly for the title screen. */
 export function describeJoinError(err: unknown): string {
   const message = String((err as any)?.message ?? err ?? "");
-  if (/not found|invalid|no rooms/i.test(message)) return "No patch found with that code. Check it and try again!";
+  if (/not found|invalid|no rooms/i.test(message)) {
+    return "No patch found with that code. Check the code — or the room closed (empty for 2 minutes), so ask your friend to create a new one.";
+  }
   if (/full|locked/i.test(message)) return "That patch already has 2 friends in it.";
   if (/ECONNREFUSED|failed to fetch|network|websocket/i.test(message) || message === "") {
     return "Can't reach the game server. Is it running? (cd server && npm start)";
