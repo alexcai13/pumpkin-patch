@@ -1,7 +1,7 @@
 import { Room, Client, CloseCode } from "colyseus";
 import { PatchState } from "./schema/PatchState.js";
 import { PlayerState } from "./schema/PlayerState.js";
-import { RaceState, HayrideState } from "./schema/ActivityState.js";
+import { RaceState, HayrideState, BoothState } from "./schema/ActivityState.js";
 import { claimRoomCode, releaseRoomCode } from "./roomCodes.js";
 import { PATCH_MAP } from "../../../shared/map/patchMap.js";
 import { CollisionGrid } from "../../../shared/map/collision.js";
@@ -14,6 +14,7 @@ import { PickingRace } from "./activities/PickingRace.js";
 import { Carving } from "./activities/Carving.js";
 import { Benches } from "./activities/Benches.js";
 import { Hayride } from "./activities/Hayride.js";
+import { PhotoBooth } from "./activities/PhotoBooth.js";
 
 /** Fastest legal speed in px/sec (running), plus 25% slack for timing jitter. */
 const MAX_SPEED = (TILE / (RUN_STEP_MS / 1000)) * 1.25;
@@ -49,6 +50,7 @@ export class PatchRoom extends Room<{ state: PatchState }> {
   // own message handlers. They're created in onCreate.
   private race!: PickingRace;
   private hayride!: Hayride;
+  private booth!: PhotoBooth;
 
   messages = {
     /** A client reports where its own character is (≈15 times per second). */
@@ -57,8 +59,8 @@ export class PatchRoom extends Room<{ state: PatchState }> {
       const guard = this.guards.get(client.sessionId);
       if (!player || !guard || !msg) return;
       if (!Number.isFinite(msg.x) || !Number.isFinite(msg.y)) return;
-      // Sitting or riding: the server places them, so ignore their reports.
-      if (player.seat || player.riding >= 0) return;
+      // Sitting, riding or posing: they're not walking, so ignore reports.
+      if (player.seat || player.riding >= 0 || player.inBooth) return;
 
       // Refill the movement budget for the time that passed.
       const now = Date.now();
@@ -90,12 +92,14 @@ export class PatchRoom extends Room<{ state: PatchState }> {
     this.roomId = claimRoomCode();
     this.state.race = new RaceState();
     this.state.hayride = new HayrideState();
+    this.state.booth = new BoothState();
 
     new Emotes(this);
     this.race = new PickingRace(this);
     new Carving(this);
     new Benches(this);
     this.hayride = new Hayride(this);
+    this.booth = new PhotoBooth(this);
 
     // 20 updates per second for things that move on their own (the wagon).
     this.setSimulationInterval((dt) => this.hayride.update(dt), 50);
@@ -158,6 +162,7 @@ export class PatchRoom extends Room<{ state: PatchState }> {
   onLeave(client: Client, code: CloseCode) {
     console.log(`${this.roomId}: ${client.sessionId} left (code ${code})`);
     this.race.onPlayerLeave(client.sessionId);
+    this.booth.leave(client.sessionId);
     this.state.players.delete(client.sessionId);
     this.guards.delete(client.sessionId);
     // Someone who left can no longer be "missing" from the wagon.
@@ -209,7 +214,7 @@ export class PatchRoom extends Room<{ state: PatchState }> {
 
   /** Is the player busy with something that should block other activities? */
   isBusy(player: PlayerState) {
-    return !!player.seat || player.riding >= 0;
+    return !!player.seat || player.riding >= 0 || player.inBooth;
   }
 }
 

@@ -1,6 +1,6 @@
 import { schema, t, type SchemaType } from "@colyseus/schema";
 import { PlayerState } from "./PlayerState.js";
-import { PumpkinState, RaceState, CarvingState, HayrideState } from "./ActivityState.js";
+import { PumpkinState, RaceState, CarvingState, HayrideState, BoothState } from "./ActivityState.js";
 
 /**
  * The whole shared state of one pumpkin patch room. The server owns it; clients
@@ -18,5 +18,7 @@ export const PatchState = schema({
   carvings: t.array(CarvingState),
 
   hayride: HayrideState,
+
+  booth: BoothState,
 });
 export type PatchState = SchemaType<typeof PatchState>;

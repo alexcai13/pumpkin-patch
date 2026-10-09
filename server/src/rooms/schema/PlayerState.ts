@@ -39,5 +39,8 @@ export const PlayerState = schema({
   seat: t.string().default(""),
   /** Hayride seat 0/1 while riding the wagon, -1 when not riding. */
   riding: t.int8().default(-1),
+
+  /** True while they have the photo booth screen open. */
+  inBooth: t.boolean().default(false),
 });
 export type PlayerState = SchemaType<typeof PlayerState>;

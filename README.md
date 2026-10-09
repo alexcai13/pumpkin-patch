@@ -50,6 +50,8 @@ facing (a prompt shows when something's usable), **1-4** for emotes.
 | Emotes | anywhere, keys 1-4 | `activities/Emotes.ts` | `world/activities/EmoteView.ts` |
 | Pumpkin picking race | Pumpkin Field sign | `activities/PickingRace.ts` | `world/activities/RaceView.ts`, `scenes/RaceHud.ts` |
 | Carving station | tables on the porch | `activities/Carving.ts` | `scenes/Carving.ts`, `world/activities/PorchView.ts` |
+| Look at carvings | finished pumpkins on the porch | (synced in state) | `scenes/CarvingViewer.ts` |
+| Photo booth (live webcams, 4-photo strip) | inside the booth frame | `activities/PhotoBooth.ts` | `scenes/PhotoBooth.ts`, `net/BoothRtc.ts`, `art/boothArt.ts` |
 | Cider stand benches | benches by the cider stand | `activities/Benches.ts` | `world/activities/BenchView.ts`, `scenes/CiderCozy.ts` |
 | Hayride | wagon at the Hayride sign | `activities/Hayride.ts` | `world/activities/HayrideView.ts` |
 
@@ -59,6 +61,11 @@ To add a new "press E here" action, register a provider with
 
 In development you can inspect the game from the browser console via
 `__pumpkin.Network.room.state`.
+
+**Photo booth cameras** need `localhost` or `https://` (browsers block cameras
+on plain `http://192.168…` addresses), so use localhost for local testing; the
+deployed https site works anywhere. Video goes directly between the two
+browsers (WebRTC); the game server only passes the connection setup messages.
 
 The server's address comes from `VITE_SERVER_URL` (set it when deploying). If
 it's not set, the client uses port 2567 on the same host that served the page.

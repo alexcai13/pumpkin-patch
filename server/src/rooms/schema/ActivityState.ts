@@ -56,3 +56,14 @@ export const HayrideState = schema({
   departIn: t.uint8(),
 });
 export type HayrideState = SchemaType<typeof HayrideState>;
+
+/** The photo booth's shared timer. Who's in the booth is PlayerState.inBooth. */
+export const BoothState = schema({
+  /** "idle" → "shooting" → "done" (strip ready) → back to "idle" on the next start */
+  phase: t.string().default("idle"),
+  /** Which of the 4 photos is coming up (1-4) while shooting. */
+  shot: t.uint8(),
+  /** 3, 2, 1 before each photo; 0 at the moment it's taken. */
+  countdown: t.uint8(),
+});
+export type BoothState = SchemaType<typeof BoothState>;

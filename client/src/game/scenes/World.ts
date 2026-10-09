@@ -18,6 +18,7 @@ import { BenchView } from "../world/activities/BenchView";
 import { HayrideView } from "../world/activities/HayrideView";
 import { EmoteView } from "../world/activities/EmoteView";
 import { SignView } from "../world/activities/SignView";
+import { BoothView } from "../world/activities/BoothView";
 import { HudEvents } from "./Hud";
 
 interface RemotePlayer {
@@ -88,6 +89,7 @@ export class World extends Scene {
     new PorchView(ctx);
     this.bench = new BenchView(ctx, (cozy) => { this.cozyZoom = cozy; this.applyZoom(true); });
     new EmoteView(ctx);
+    new BoothView(ctx);
     new SignView(ctx); // last: generic "read the sign" for signs nothing else uses
 
     this.scene.launch("Hud");

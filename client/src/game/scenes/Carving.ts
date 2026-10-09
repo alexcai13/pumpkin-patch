@@ -1,6 +1,7 @@
 import * as Phaser from "phaser";
 import { CARVE_W, CARVE_H } from "../../../../shared/constants";
 import { encodeCarving, insidePumpkin } from "../../../../shared/carving";
+import { paintCarving } from "../art/carvingArt";
 import { P } from "../art/palette";
 import { Network } from "../net/Network";
 import { FONT } from "../ui/fonts";
@@ -148,23 +149,7 @@ export class Carving extends Phaser.Scene {
 
   /** Repaint the little canvas: pumpkin body, ribs, and carved holes. */
   private redraw() {
-    const ctx = this.tex.getContext();
-    ctx.clearRect(0, 0, CARVE_W, CARVE_H);
-    for (let y = 0; y < CARVE_H; y++) {
-      for (let x = 0; x < CARVE_W; x++) {
-        if (!insidePumpkin(x, y)) continue;
-        // When "lit", the shell darkens like it's night, so the glow pops.
-        const body = this.lit ? P.orangeDark : P.orange;
-        const shade = this.lit ? "#7a3414" : P.orangeDark;
-        let color: string = body;
-        if (this.pixels[y * CARVE_W + x]) color = this.lit ? (((x + y) % 3 === 0) ? "#fff4c2" : P.glow) : "#3a1a0e";
-        else if (x === 8 || x === 16 || x === 24) color = shade; // ribs
-        else if (!this.lit && y < 6 && x > 6 && x < 12) color = P.orangeLight; // shine
-        else if (!insidePumpkin(x, y + 2) || !insidePumpkin(x + 2, y)) color = shade; // shading
-        ctx.fillStyle = color;
-        ctx.fillRect(x, y, 1, 1);
-      }
-    }
+    paintCarving(this.tex.getContext(), this.pixels, this.lit);
     this.tex.refresh();
   }
 

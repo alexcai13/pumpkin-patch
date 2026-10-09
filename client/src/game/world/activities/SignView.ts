@@ -16,7 +16,7 @@ const SIGN_TEXT: Record<string, string> = {
   signStopFarm: "Hayride stop — the wagon pauses here. Hop on or off!",
   signStopMaze: "Hayride stop — the wagon pauses here. Hop on or off!",
   signPrizes: "Tickets & Prizes — opening soon!",
-  signPhoto: "Photo Booth — opening soon!",
+  signPhoto: "Photo Booth — step inside the frame and press E. Both of you on camera, 4 photos, one strip!",
   scarecrowPost: "An empty scarecrow post… it needs a hat, a shirt and some stuffing. (Coming soon!)",
 };
 

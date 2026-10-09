@@ -3,6 +3,7 @@ import {
   defineRoom,
   monitor,
   playground,
+  WebSocketTransport,
 } from "colyseus";
 
 /**
@@ -11,6 +12,13 @@ import {
 import { PatchRoom } from "./rooms/PatchRoom.js";
 
 const server = defineServer({
+
+  /**
+   * WebSocket settings. The default max message size is only 4 KB, but the
+   * photo booth's video-setup messages (WebRTC "offers") are a few KB each;
+   * anything over the limit makes the server drop that player's connection.
+   */
+  transport: new WebSocketTransport({ maxPayload: 64 * 1024 }),
 
   /**
    * Define your room handlers:

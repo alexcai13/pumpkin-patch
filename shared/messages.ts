@@ -40,3 +40,18 @@ export interface SitMessage { bench: string }
 
 /** Server → one client: you've been moved (dismounting, standing up...). */
 export type TeleportMessage = CorrectMessage;
+
+/**
+ * WebRTC setup messages for the photo booth's live video. The server only
+ * relays these between the two players; the video itself goes directly
+ * browser-to-browser.
+ */
+export type RtcSignal =
+  | { kind: "offer"; sdp: string }
+  | { kind: "answer"; sdp: string }
+  | { kind: "ice"; candidate: RTCIceCandidateInit };
+/** Server → client: a relayed signal from the other player. */
+export interface RtcRelay { from: string; signal: RtcSignal }
+
+/** Server → booth members: take photo number `shot` (1-4) right now. */
+export interface SnapMessage { shot: number }

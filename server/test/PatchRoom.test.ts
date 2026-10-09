@@ -4,7 +4,7 @@ import { ColyseusTestServer, boot } from "@colyseus/testing";
 import appConfig from "../src/app.config.js";
 import type { PatchState } from "../src/rooms/schema/PatchState.js";
 import { PATCH_MAP } from "../../shared/map/patchMap.js";
-import { TILE, RACE, HAYRIDE, CARVE_W, CARVE_H } from "../../shared/constants.js";
+import { TILE, RACE, HAYRIDE, CARVE_W, CARVE_H, BOOTH } from "../../shared/constants.js";
 import { encodeCarving, decodeCarving } from "../../shared/carving.js";
 
 // One test server shared by every test below.
@@ -140,4 +140,35 @@ describe("Activities", () => {
     assert.strictEqual(player.riding, 0);
     assert.ok(Math.abs(player.x - (room.state.hayride.x + HAYRIDE.seats[0].x)) < 0.01);
   });
+
+  it("photo booth: relays rtc between members and takes 4 snaps", async () => {
+    const room = await colyseus.createRoom<PatchState>("patch", {});
+    const a = await colyseus.connectTo(room, { name: "A" });
+    const b = await colyseus.connectTo(room, { name: "B" });
+    for (const c of [a, b]) {
+      const p = room.state.players.get(c.sessionId);
+      p.x = 53 * TILE + 8; p.y = 34 * TILE + 8; // inside the booth
+      c.send("booth:enter");
+    }
+    await wait(100);
+    assert.ok(room.state.players.get(a.sessionId).inBooth && room.state.players.get(b.sessionId).inBooth);
+
+    let relayed: any = null;
+    b.onMessage("rtc", (m) => { relayed = m; });
+    // Real offers are several KB — bigger than the WebSocket default limit (4 KB).
+    const sdp = "v=0\r\n" + "a=candidate:x\r\n".repeat(400);
+    a.send("rtc", { kind: "offer", sdp });
+    await wait(150);
+    assert.deepStrictEqual(relayed, { from: a.sessionId, signal: { kind: "offer", sdp } });
+    assert.ok(room.state.players.get(a.sessionId).connected, "big message didn't drop the sender");
+
+    const snaps: number[] = [];
+    a.onMessage("booth:snap", (m) => snaps.push(m.shot));
+    room.state.booth.phase = "idle";
+    a.send("booth:start");
+    await wait(4 * (BOOTH.countdownSeconds * 1000 + BOOTH.pauseMs) + 400);
+    assert.deepStrictEqual(snaps, [1, 2, 3, 4]);
+    assert.strictEqual(room.state.booth.phase, "done");
+  }).timeout(30000);
 });
+

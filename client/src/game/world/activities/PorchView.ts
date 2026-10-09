@@ -15,6 +15,7 @@ const SPOTS = PATCH_MAP.porchSpots ?? [];
  * In-world side of the CARVING STATION:
  *  - E at a carving table opens the Carving scene (the drawing overlay).
  *  - Every finished carving (from either player) sits glowing on the porch.
+ *  - E on a porch pumpkin opens the CarvingViewer scene to see it up close.
  */
 export class PorchView {
   private shown = new Map<string, Phaser.GameObjects.GameObject[]>();
@@ -30,6 +31,23 @@ export class PorchView {
     callbacks.onRemove("carvings", (c: CarvingState) => {
       this.shown.get(c.id)?.forEach((o) => o.destroy());
       this.shown.delete(c.id);
+    });
+
+    // Look at a finished jack-o'-lantern (facing it or standing on its spot).
+    ctx.interactions.add((c) => {
+      const carvings = [...room.state.carvings];
+      const index = carvings.findIndex((cv) => {
+        const spot = SPOTS[cv.spot];
+        return spot && ((c.faceX === spot.x && c.faceY === spot.y) || (c.tileX === spot.x && c.tileY === spot.y));
+      });
+      if (index === -1) return null;
+      return {
+        label: `Look at ${carvings[index].owner}'s pumpkin`,
+        use: () => {
+          ctx.setUiOpen(true);
+          scene.scene.launch("CarvingViewer", { index, onClose: () => ctx.setUiOpen(false) });
+        },
+      };
     });
 
     ctx.interactions.add((c) => {

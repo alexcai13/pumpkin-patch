@@ -7,6 +7,8 @@ import { Hud } from "./scenes/Hud";
 import { RaceHud } from "./scenes/RaceHud";
 import { Carving } from "./scenes/Carving";
 import { CiderCozy } from "./scenes/CiderCozy";
+import { CarvingViewer } from "./scenes/CarvingViewer";
+import { PhotoBooth } from "./scenes/PhotoBooth";
 
 //  Game config docs: https://docs.phaser.io/api-documentation/typedef/types-core#gameconfig
 const config: Phaser.Types.Core.GameConfig = {
@@ -22,7 +24,7 @@ const config: Phaser.Types.Core.GameConfig = {
   // Keep frame pacing gentle on low-end Chromebooks.
   fps: { target: 60 },
   // Order matters for drawing: later scenes draw on top of earlier ones.
-  scene: [Boot, Preloader, Title, World, CiderCozy, Hud, RaceHud, Carving],
+  scene: [Boot, Preloader, Title, World, CiderCozy, Hud, RaceHud, Carving, CarvingViewer, PhotoBooth],
 };
 
 const StartGame = (parent: string) => {
