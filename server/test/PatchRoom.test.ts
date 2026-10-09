@@ -1,17 +1,11 @@
 import assert from "assert";
-import { ColyseusTestServer, boot } from "@colyseus/testing";
+import { colyseus } from "./_server.js";
 
-import appConfig from "../src/app.config.js";
 import type { PatchState } from "../src/rooms/schema/PatchState.js";
 import { PATCH_MAP } from "../../shared/map/patchMap.js";
 import { TILE, RACE, HAYRIDE, CARVE_W, CARVE_H, BOOTH } from "../../shared/constants.js";
 import { encodeCarving, decodeCarving } from "../../shared/carving.js";
 
-// One test server shared by every test below.
-let colyseus: ColyseusTestServer<typeof appConfig>;
-before(async () => colyseus = await boot(appConfig));
-after(async () => colyseus.shutdown());
-beforeEach(async () => colyseus.cleanup());
 
 describe("PatchRoom", () => {
   it("uses a short room code as the room id", async () => {

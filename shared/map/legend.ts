@@ -69,10 +69,21 @@ export interface HayrideDef {
   route: { x: number; y: number; stop?: string }[];
 }
 
+export interface Tile { x: number; y: number }
+export interface Rect { x: number; y: number; w: number; h: number }
+
 export interface MapDef {
   rows: string[];
   props: PropDef[];
-  spawns: { x: number; y: number }[];
-  porchSpots?: { x: number; y: number }[];
+  spawns: Tile[];
+  porchSpots?: Tile[];
   hayride?: HayrideDef;
+  /** Giant pumpkin push: where it starts (top-left of its 2x2) and where to roll it. */
+  giantPumpkin?: { start: Tile; goal: Tile };
+  /** Possible hiding spots for scarecrow parts; 3 are picked at random each session. */
+  scarecrowSpots?: Tile[];
+  /** Where you press E to enter the corn maze. */
+  mazeEntrance?: Rect;
+  /** Minigame stations: stand on / face these tiles to play. */
+  stations?: Record<"bowling" | "apples" | "toss", Rect>;
 }

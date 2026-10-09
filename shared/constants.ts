@@ -72,6 +72,29 @@ export const HAYRIDE = {
 export const CARVE_W = 32;
 export const CARVE_H = 24;
 
+/** Tickets earned from activities (spent at the prize stand in Batch C). */
+export const TICKETS = {
+  giantPumpkin: 15,
+  scarecrow: 6,
+  maze: 10,
+  raceWin: 6,
+  minigameWin: 6,
+  played: 2,
+};
+
+/** Scarecrow parts you can find and carry (they use PlayerState.carrying). */
+export const SCARECROW_PARTS = ["hat", "shirt", "stuffing"] as const;
+export type ScarecrowPart = (typeof SCARECROW_PARTS)[number];
+export const PART_NAMES: Record<ScarecrowPart, string> = { hat: "straw hat", shirt: "flannel shirt", stuffing: "bundle of straw" };
+
+/** Minigames: one at a time per room. */
+export const MINIGAMES = {
+  bowling: { name: "Pumpkin Bowling", turns: 3 },
+  apples: { name: "Apple Bobbing", target: 5 },
+  toss: { name: "Hay Bale Toss", turns: 3 },
+} as const;
+export type MinigameId = keyof typeof MINIGAMES;
+
 /** Photo booth: how the shoot is timed. */
 export const BOOTH = {
   shots: 3,

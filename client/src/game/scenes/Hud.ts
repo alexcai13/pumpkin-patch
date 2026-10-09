@@ -20,6 +20,8 @@ export class Hud extends Scene {
   private toasts: GameObjects.Text[] = [];
   private overlay?: GameObjects.Container;
   private lastCount = -1;
+  private ticketText!: GameObjects.Text;
+  private lastTickets = -1;
 
   constructor() {
     super("Hud");
@@ -28,8 +30,9 @@ export class Hud extends Scene {
   create() {
     const code = Network.room?.roomId ?? "?????";
     this.add.text(12, 10, `Room code: ${code}`, textStyle(18, "#ffe08a"));
+    this.ticketText = this.add.text(12, 56, "", textStyle(15, "#f4d77a"));
     this.waitText = this.add.text(12, 34, "", textStyle(14, "#f1e3c2"));
-    this.add.text(12, this.scale.height - 26, "Move: Arrows / WASD    Run: Shift    Use: E / Space    Emotes: 1 ♥  2 laugh  3 wave  4 !", textStyle(13, "#f1e3c2"))
+    this.add.text(12, this.scale.height - 26, "Move: Arrows / WASD    Run: Shift    Use: E / Space    Emotes: 1-4", textStyle(13, "#f1e3c2"))
       .setAlpha(0.8)
       .setName("help");
     this.layout();
@@ -62,6 +65,18 @@ export class Hud extends Scene {
     if (count !== this.lastCount) {
       this.lastCount = count;
       this.setPlayers(count);
+    }
+    // Ticket counter (pops when it goes up).
+    const room = Network.room;
+    const tickets = room?.state.players.get(room.sessionId)?.tickets ?? 0;
+    if (tickets !== this.lastTickets) {
+      const gained = this.lastTickets >= 0 && tickets > this.lastTickets;
+      this.lastTickets = tickets;
+      this.ticketText.setText(`🎟 ${tickets} tickets`);
+      if (gained) {
+        this.ticketText.setScale(1.4);
+        this.tweens.add({ targets: this.ticketText, scale: 1, duration: 400, ease: "Back.easeOut" });
+      }
     }
   }
 

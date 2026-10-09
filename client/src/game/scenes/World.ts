@@ -19,6 +19,10 @@ import { HayrideView } from "../world/activities/HayrideView";
 import { EmoteView } from "../world/activities/EmoteView";
 import { SignView } from "../world/activities/SignView";
 import { BoothView } from "../world/activities/BoothView";
+import { GiantView } from "../world/activities/GiantView";
+import { ScarecrowView } from "../world/activities/ScarecrowView";
+import { MazeView } from "../world/activities/MazeView";
+import { MinigameView } from "../world/activities/MinigameView";
 import { HudEvents } from "./Hud";
 
 interface RemotePlayer {
@@ -52,6 +56,9 @@ export class World extends Scene {
   private race!: RaceView;
   private bench!: BenchView;
   private hayride!: HayrideView;
+  private giant!: GiantView;
+  private scarecrow!: ScarecrowView;
+  private mazeView!: MazeView;
 
   constructor() {
     super("World");
@@ -83,6 +90,8 @@ export class World extends Scene {
       toast: (text) => this.game.events.emit(HudEvents.Toast, text),
       setUiOpen: (open) => { this.uiOpen = open; },
       zoom: () => this.zoom,
+      controller: () => this.controller,
+      propImage: (id) => this.builder.propImages.get(id),
     };
     this.hayride = new HayrideView(ctx);
     this.race = new RaceView(ctx);
@@ -90,6 +99,10 @@ export class World extends Scene {
     this.bench = new BenchView(ctx, (cozy) => { this.cozyZoom = cozy; this.applyZoom(true); });
     new EmoteView(ctx);
     new BoothView(ctx);
+    this.giant = new GiantView(ctx);
+    this.scarecrow = new ScarecrowView(ctx);
+    this.mazeView = new MazeView(ctx);
+    new MinigameView(ctx);
     new SignView(ctx); // last: generic "read the sign" for signs nothing else uses
 
     this.scene.launch("Hud");
@@ -121,6 +134,7 @@ export class World extends Scene {
     this.remotes.forEach((r) => r.character.setTextResolution(res));
     this.interactions.setTextResolution(res);
     this.race?.setTextResolution(res);
+    this.giant?.setTextResolution(res);
   }
 
   private listenToRoom() {
@@ -146,6 +160,9 @@ export class World extends Scene {
       this.controller?.teleportToTile(Math.floor(msg.x / TILE), Math.floor(msg.y / TILE));
       this.lastSent = "";
     });
+
+    // Short announcements from the server ("The scarecrow is complete!" ...).
+    room.onMessage("toast", (msg: { text: string }) => this.game.events.emit(HudEvents.Toast, msg.text));
 
     room.onDrop(() => this.game.events.emit(HudEvents.Connection, "reconnecting"));
     room.onReconnect(() => this.game.events.emit(HudEvents.Connection, "ok"));
@@ -214,6 +231,9 @@ export class World extends Scene {
     this.hayride.update();
     this.race.update();
     this.bench.update();
+    this.giant.update();
+    this.scarecrow.update();
+    this.mazeView.update();
 
     if (this.controller && this.me && this.myState) this.updateMe(delta);
 

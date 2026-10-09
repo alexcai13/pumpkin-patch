@@ -31,6 +31,8 @@ export class PlayerController {
   enabled = true;
   /** Multiplies how long each step takes (carrying a big pumpkin = slower). */
   stepMultiplier = 1;
+  /** The last time you walked into something solid (and what). */
+  lastBump: { dir: Dir; tx: number; ty: number; at: number } | null = null;
 
   private fromX = 0; private fromY = 0;
   private toX = 0; private toY = 0;
@@ -133,8 +135,10 @@ export class PlayerController {
     const nx = this.tileX + v.dx;
     const ny = this.tileY + v.dy;
     if (this.collision.isBlocked(nx, ny)) {
-      // Bumped into something: face it, don't move.
+      // Bumped into something: face it, don't move. Remember it, so things
+      // like the giant pumpkin know you're pushing on them.
       this.moving = false;
+      this.lastBump = { dir, tx: nx, ty: ny, at: performance.now() };
       return;
     }
     this.fromX = this.tileX; this.fromY = this.tileY;

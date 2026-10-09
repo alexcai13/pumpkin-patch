@@ -106,7 +106,9 @@ export class Character {
     this.carryImage?.destroy();
     this.carryImage = undefined;
     if (kind) {
-      this.carryImage = this.scene.add.image(this.x, this.y, kind === "big" ? "pumpkin_big" : "pumpkin").setOrigin(0.5, 1);
+      // "small"/"big" = race pumpkins; anything else is a scarecrow part.
+      const key = kind === "big" ? "pumpkin_big" : kind === "small" ? "pumpkin" : `part_${kind}`;
+      this.carryImage = this.scene.add.image(this.x, this.y, key).setOrigin(0.5, 1);
     }
     if (picked) this.squash();
     this.syncDisplay();

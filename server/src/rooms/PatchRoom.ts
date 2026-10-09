@@ -15,6 +15,10 @@ import { Carving } from "./activities/Carving.js";
 import { Benches } from "./activities/Benches.js";
 import { Hayride } from "./activities/Hayride.js";
 import { PhotoBooth } from "./activities/PhotoBooth.js";
+import { GiantPumpkin } from "./activities/GiantPumpkin.js";
+import { Scarecrow } from "./activities/Scarecrow.js";
+import { CornMaze } from "./activities/CornMaze.js";
+import { Minigames } from "./activities/Minigames.js";
 
 /** Fastest legal speed in px/sec (running), plus 25% slack for timing jitter. */
 const MAX_SPEED = (TILE / (RUN_STEP_MS / 1000)) * 1.25;
@@ -60,6 +64,9 @@ export class PatchRoom extends Room<{ state: PatchState }> {
   private race!: PickingRace;
   private hayride!: Hayride;
   private booth!: PhotoBooth;
+  private scarecrow!: Scarecrow;
+  private maze!: CornMaze;
+  private minigames!: Minigames;
 
   messages = {
     /** A client reports where its own character is (≈15 times per second). */
@@ -68,8 +75,9 @@ export class PatchRoom extends Room<{ state: PatchState }> {
       const guard = this.guards.get(client.sessionId);
       if (!player || !guard || !msg) return;
       if (!Number.isFinite(msg.x) || !Number.isFinite(msg.y)) return;
-      // Sitting, riding or posing: they're not walking, so ignore reports.
-      if (player.seat || player.riding >= 0 || player.inBooth) return;
+      // Sitting, riding, posing, in the maze or a minigame: they're not
+      // walking around the patch, so ignore reports.
+      if (this.isBusy(player, client.sessionId)) return;
 
       // Refill the movement budget for the time that passed.
       const now = Date.now();
@@ -93,6 +101,8 @@ export class PatchRoom extends Room<{ state: PatchState }> {
       player.dir = clampInt(msg.dir, 0, 3);
       player.moving = !!msg.moving;
       player.running = !!msg.running;
+      // Walked away from the maze line? Leave the line.
+      if (player.mazeReady && !this.maze.nearEntrance(player.x, player.y)) player.mazeReady = false;
     },
   };
 
@@ -109,6 +119,10 @@ export class PatchRoom extends Room<{ state: PatchState }> {
     new Benches(this);
     this.hayride = new Hayride(this);
     this.booth = new PhotoBooth(this);
+    new GiantPumpkin(this);
+    this.scarecrow = new Scarecrow(this);
+    this.maze = new CornMaze(this);
+    this.minigames = new Minigames(this);
 
     // 20 updates per second for things that move on their own (the wagon).
     this.setSimulationInterval((dt) => this.hayride.update(dt), 50);
@@ -174,6 +188,9 @@ export class PatchRoom extends Room<{ state: PatchState }> {
     console.log(`${this.roomId}: ${client.sessionId} left (code ${code})`);
     this.race.onPlayerLeave(client.sessionId);
     this.booth.leave(client.sessionId);
+    this.scarecrow.onPlayerLeave(client.sessionId);
+    this.maze.onPlayerLeave(client.sessionId);
+    this.minigames.leave(client.sessionId);
     this.state.players.delete(client.sessionId);
     this.guards.delete(client.sessionId);
     // Someone who left can no longer be "missing" from the wagon.
@@ -233,8 +250,18 @@ export class PatchRoom extends Room<{ state: PatchState }> {
   }
 
   /** Is the player busy with something that should block other activities? */
-  isBusy(player: PlayerState) {
-    return !!player.seat || player.riding >= 0 || player.inBooth;
+  isBusy(player: PlayerState, sessionId?: string) {
+    if (player.seat || player.riding >= 0 || player.inBooth) return true;
+    const id = sessionId ?? [...this.state.players.entries()].find(([, p]) => p === player)?.[0];
+    return !!id && (this.maze.isInMaze(id) || this.minigames.isPlaying(id));
+  }
+
+  /** Give tickets to these players. */
+  awardTickets(sessionIds: string[], amount: number) {
+    for (const id of sessionIds) {
+      const p = this.state.players.get(id);
+      if (p) p.tickets = Math.min(65535, p.tickets + amount);
+    }
   }
 }
 

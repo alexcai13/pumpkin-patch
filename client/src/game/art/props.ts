@@ -518,3 +518,107 @@ export function drawCarvedPumpkin(pixels: Uint8Array, gridW: number, gridH: numb
   }
   return canvas;
 }
+
+// ---------------------------------------------------------------- Batch B art
+
+/** The GIANT pumpkin (2x2 tiles), 36x34 so it bulges a little past its footprint. */
+export function drawGiantPumpkin() {
+  const { canvas, ctx } = makeCanvas(36, 34);
+  ctx.globalAlpha = 0.3; ellipse(ctx, 18, 31, 17, 3, P.black); ctx.globalAlpha = 1;
+  for (const [dx, c] of [[-8, P.orangeDark], [8, P.orangeDark], [0, P.orange]] as const) {
+    ellipse(ctx, 18 + dx, 19, 10.5, 12, P.outline);
+    ellipse(ctx, 18 + dx, 19, 9.5, 11, c);
+  }
+  ellipse(ctx, 12, 13, 3, 4, P.orangeLight);
+  rect(ctx, 16, 3, 4, 6, P.outline); rect(ctx, 17, 3, 2, 5, P.stem);
+  rect(ctx, 20, 4, 5, 2, P.leafGreen); px(ctx, 25, 5, P.leafGreenDark);
+  return canvas;
+}
+
+/** Scarecrow parts, carried overhead / lying hidden in the grass (14x12). */
+export function drawPart(kind: "hat" | "shirt" | "stuffing") {
+  const { canvas, ctx } = makeCanvas(14, 12);
+  if (kind === "hat") {
+    ellipse(ctx, 7, 9, 7, 2.5, P.outline); ellipse(ctx, 7, 9, 6, 1.8, P.hay);
+    outlineRect(ctx, 3, 2, 8, 7, P.hayDark);
+    rect(ctx, 4, 6, 6, 2, P.red);
+  } else if (kind === "shirt") {
+    outlineRect(ctx, 3, 2, 8, 10, P.red);
+    outlineRect(ctx, 0, 2, 4, 6, P.red); outlineRect(ctx, 10, 2, 4, 6, P.red);
+    for (let x = 1; x < 13; x += 3) rect(ctx, x, 3, 1, 8, P.redDark);
+    for (let y = 4; y < 11; y += 3) rect(ctx, 1, y, 12, 1, P.redDark);
+    rect(ctx, 6, 2, 2, 2, P.cream);
+  } else {
+    blob(ctx, [[7, 7, 6, 4]], P.hayDark, P.hay, P.hayLight);
+    for (let i = 0; i < 5; i++) rect(ctx, 2 + i * 2.5, 1 + (i % 2), 1, 4, P.hayDark);
+    rect(ctx, 3, 7, 8, 1, P.woodDark); // twine
+  }
+  return canvas;
+}
+
+/** A tiny 4-point twinkle (5x5) shown over hidden things. */
+export function drawSparkle() {
+  const { canvas, ctx } = makeCanvas(5, 5);
+  rect(ctx, 2, 0, 1, 5, P.goldLight); rect(ctx, 0, 2, 5, 1, P.goldLight); px(ctx, 2, 2, P.white);
+  return canvas;
+}
+
+/**
+ * The scarecrow on its post, drawn with whichever parts are on so far
+ * (16x32, same size as the empty post prop).
+ */
+export function drawScarecrow(hat: boolean, shirt: boolean, stuffing: boolean) {
+  const { canvas, ctx } = makeCanvas(24, 36);
+  const ox = 4, oy = 4; // drawn into a slightly bigger canvas so the hat/arms fit
+  // Post + crossbar
+  outlineRect(ctx, ox + 6, oy + 2, 4, 30, P.wood);
+  outlineRect(ctx, ox - 2, oy + 10, 20, 4, P.wood);
+  if (stuffing) {
+    // Straw body + head + straw tufts at the hands
+    ellipse(ctx, ox + 8, oy + 6, 5, 5, P.outline); ellipse(ctx, ox + 8, oy + 6, 4, 4, P.hay);
+    px(ctx, ox + 6, oy + 5, P.outline); px(ctx, ox + 10, oy + 5, P.outline);
+    rect(ctx, ox + 6, oy + 8, 5, 1, P.outline);
+    outlineRect(ctx, ox + 4, oy + 11, 9, 12, P.hay);
+    for (const hx of [ox - 3, ox + 17]) { rect(ctx, hx, oy + 10, 2, 5, P.hayLight); px(ctx, hx + 1, oy + 15, P.hayDark); }
+  }
+  if (shirt) {
+    outlineRect(ctx, ox + 3, oy + 10, 11, 11, P.red);
+    outlineRect(ctx, ox - 2, oy + 10, 6, 4, P.red); outlineRect(ctx, ox + 13, oy + 10, 6, 4, P.red);
+    for (let x = ox - 1; x < ox + 18; x += 3) rect(ctx, x, oy + 11, 1, 2, P.redDark);
+    for (let x = ox + 4; x < ox + 13; x += 3) rect(ctx, x, oy + 13, 1, 7, P.redDark);
+    rect(ctx, ox + 4, oy + 15, 9, 1, P.redDark);
+    rect(ctx, ox + 7, oy + 10, 2, 2, P.cream);
+  }
+  if (hat) {
+    ellipse(ctx, ox + 8, oy + 3, 9, 2.5, P.outline); ellipse(ctx, ox + 8, oy + 3, 8, 1.8, P.hay);
+    outlineRect(ctx, ox + 4, oy - 3, 9, 6, P.hayDark);
+    rect(ctx, ox + 5, oy + 1, 7, 1, P.red);
+  }
+  return canvas;
+}
+
+/** A mini hay bale bowling pin (8x10) and the lane's pumpkin ball (10x10). */
+export function drawBowlingPin() {
+  const { canvas, ctx } = makeCanvas(8, 10);
+  outlineRect(ctx, 0, 1, 8, 9, P.hay);
+  rect(ctx, 1, 2, 6, 2, P.hayLight);
+  rect(ctx, 1, 6, 6, 1, P.red);
+  rect(ctx, 3, 1, 1, 9, P.hayDark);
+  return canvas;
+}
+export function drawBowlingBall() {
+  const { canvas, ctx } = makeCanvas(12, 12);
+  pumpkinShape(ctx, 6, 7, 5, 4);
+  return canvas;
+}
+
+/** A shiny red apple (9x9). */
+export function drawApple() {
+  const { canvas, ctx } = makeCanvas(9, 10);
+  ellipse(ctx, 4.5, 5.5, 4.5, 4.2, P.outline);
+  ellipse(ctx, 4.5, 5.5, 3.6, 3.4, P.apple);
+  px(ctx, 3, 4, P.cream); px(ctx, 2, 5, P.white);
+  rect(ctx, 4, 0, 1, 3, P.woodDark);
+  rect(ctx, 5, 1, 2, 1, P.leafGreen);
+  return canvas;
+}

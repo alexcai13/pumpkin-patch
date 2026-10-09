@@ -68,7 +68,7 @@ export const PATCH_MAP: MapDef = {
   'TT._LL_.____..""=...."..._j_________j.....j_______j_____......TT', // 35
   'TT._LL_.____....=................"..".p...._______._____p.....TT', // 36
   'TT._LL_.....__________.........".................."......"....TT', // 37
-  'TT._LL_"."..__________..................hh.".............h....TT', // 38
+  'TT._LL_"."..__________.....................".............h....TT', // 38
   'TT._LL_."......................".........."............"......TT', // 39
   'TT._LL_....h........"..T"..T.....T.....T....T...T.........T...TT', // 40
   'TT......................."....................................TT', // 41
@@ -151,6 +151,29 @@ export const PATCH_MAP: MapDef = {
       { x: 31, y: 30 },
       { x: 31, y: 33 }, // back home
     ],
+  },
+
+  /**
+   * Giant pumpkin (2x2 tiles). Both players push it together from `start`
+   * (left, then up) until its top-left tile reaches `goal`, beside the wagon.
+   */
+  giantPumpkin: { start: { x: 38, y: 37 }, goal: { x: 33, y: 32 } },
+
+  /** Scarecrow parts hide on 3 of these (walkable) tiles, chosen each session. */
+  scarecrowSpots: [
+    { x: 13, y: 2 }, { x: 24, y: 3 }, { x: 35, y: 8 }, { x: 60, y: 14 }, { x: 3, y: 24 },
+    { x: 59, y: 27 }, { x: 21, y: 41 }, { x: 44, y: 39 }, { x: 61, y: 41 }, { x: 14, y: 40 },
+    { x: 2, y: 14 }, { x: 37, y: 2 },
+  ],
+
+  /** The gap in the corn under the maze arch. */
+  mazeEntrance: { x: 50, y: 9, w: 2, h: 3 },
+
+  /** Minigame stations (tile rectangles you stand on or face). */
+  stations: {
+    bowling: { x: 4, y: 38, w: 2, h: 3 },  // bottom of the bowling lane
+    apples: { x: 9, y: 34, w: 2, h: 2 },   // the apple barrel
+    toss: { x: 12, y: 37, w: 2, h: 2 },    // start of the toss strip
   },
 
   /** Where players appear when they join (tile coordinates). Player 1 gets the first. */

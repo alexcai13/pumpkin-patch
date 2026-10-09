@@ -12,7 +12,7 @@
     "loadtest": "tsx loadtest/example.ts --room patch --numClients 2",
     "build": "vite build",
     "clean": "rimraf dist",
-    "test": "mocha -r tsx test/**.test.ts --exit --timeout 15000",
+    "test": "mocha -r tsx test/_server.ts test/*.test.ts --exit --timeout 15000",
     "dev": "tsx watch --clear-screen=false src/index.ts",
     "build:client": "vite build --mode client",
     "dev:vite": "vite"

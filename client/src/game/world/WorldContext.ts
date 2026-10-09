@@ -4,6 +4,7 @@ import type { PlayerState } from "../../../../server/src/rooms/schema/PlayerStat
 import type { PatchRoom } from "../net/Network";
 import type { Character } from "../objects/Character";
 import type { Interactions } from "./Interactions";
+import type { PlayerController } from "./PlayerController";
 
 /**
  * What the World scene hands to each activity module (world/activities/*).
@@ -24,4 +25,8 @@ export interface WorldContext {
   setUiOpen(open: boolean): void;
   /** Current camera zoom (for crisp text). */
   zoom(): number;
+  /** Your movement controller (to see what you're pushing against, etc.). */
+  controller(): PlayerController | undefined;
+  /** The image drawn for a map prop (by prop id), e.g. to change its look. */
+  propImage(id: string): Phaser.GameObjects.Image | undefined;
 }

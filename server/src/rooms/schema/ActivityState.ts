@@ -67,3 +67,87 @@ export const BoothState = schema({
   countdown: t.uint8(),
 });
 export type BoothState = SchemaType<typeof BoothState>;
+
+/** The giant pumpkin (2x2 tiles) both players push to the wagon. */
+export const GiantPumpkinState = schema({
+  /** Top-left tile. */
+  tx: t.uint8(),
+  ty: t.uint8(),
+  /** "idle" (pushable) or "loaded" (on the wagon, about to reset). */
+  phase: t.string().default("idle"),
+  /** How many players are pushing it right now (for the "too heavy" hint). */
+  pushers: t.uint8(),
+});
+export type GiantPumpkinState = SchemaType<typeof GiantPumpkinState>;
+
+/** One scarecrow part lying somewhere in the patch, waiting to be found. */
+export const ScarecrowPartState = schema({
+  kind: t.string(),
+  tx: t.uint8(),
+  ty: t.uint8(),
+});
+export type ScarecrowPartState = SchemaType<typeof ScarecrowPartState>;
+
+export const ScarecrowState = schema({
+  /** Parts still lying around (keyed by kind). Carried parts are on PlayerState.carrying. */
+  parts: t.map(ScarecrowPartState),
+  /** Parts already put on the post. */
+  hat: t.boolean(),
+  shirt: t.boolean(),
+  stuffing: t.boolean(),
+  /** All three on: stays built for the rest of the session. */
+  built: t.boolean(),
+});
+export type ScarecrowState = SchemaType<typeof ScarecrowState>;
+
+/** A player's position inside the corn maze (separate from the main map). */
+export const MazePlayerState = schema({
+  x: t.float32(),
+  y: t.float32(),
+  dir: t.uint8(),
+  moving: t.boolean(),
+});
+export type MazePlayerState = SchemaType<typeof MazePlayerState>;
+
+export const MazeState = schema({
+  /** "idle" → "running" → "done" (both at the exit) → "idle" */
+  phase: t.string().default("idle"),
+  /** Which maze (see shared/maze.ts generateMaze). */
+  seed: t.uint32(),
+  /** Server clock (ms) when the run started / how long it took. */
+  startedAt: t.float64(),
+  finishMs: t.uint32(),
+  /** Fastest finish this session (0 = none yet). */
+  bestMs: t.uint32(),
+  /** sessionId of the player holding the map (they see only a little around them). */
+  mapHolder: t.string().default(""),
+  /** Players inside, keyed by sessionId. */
+  players: t.map(MazePlayerState),
+});
+export type MazeState = SchemaType<typeof MazeState>;
+
+/**
+ * The one minigame running in the room (bowling / apples / toss), if any.
+ *  "" → lobby (players gather) → playing → results → (play again or close)
+ */
+export const MinigameState = schema({
+  /** "" (none), "bowling", "apples" or "toss". */
+  game: t.string().default(""),
+  phase: t.string().default(""),
+  /** Participants (sessionIds), in turn order. */
+  players: t.array("string"),
+  /** Whose turn it is (bowling / toss). */
+  turn: t.string().default(""),
+  /** Throw number (1..turns). */
+  round: t.uint8(),
+  /** Score per sessionId: pins (bowling), apples, or best distance in cm (toss). */
+  scores: t.map("number"),
+  /** sessionId of the winner, "tie", or "". */
+  winner: t.string().default(""),
+  seed: t.uint32(),
+  /** Server clock (ms) when play started (apples use it for timing). */
+  startedAt: t.float64(),
+  /** Apples: for each player, how many times each of their 3 apples was replaced, e.g. "0,2,1". */
+  generations: t.map("string"),
+});
+export type MinigameState = SchemaType<typeof MinigameState>;

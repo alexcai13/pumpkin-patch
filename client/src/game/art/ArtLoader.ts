@@ -5,6 +5,7 @@ import { drawTileset } from "./tiles";
 import {
   drawTree, drawCorn, drawHay, drawPumpkin, drawLantern, drawFence, drawLeaf,
   drawWagon, drawBigPumpkin, drawEmote, drawGlow, drawVignette,
+  drawGiantPumpkin, drawPart, drawSparkle, drawBowlingPin, drawBowlingBall, drawApple,
   PROP_ART, TREE_VARIANTS, LEAF_COLORS,
 } from "./props";
 import type { PropType } from "../../../../shared/map/legend";
@@ -57,6 +58,12 @@ export const ART: ArtEntry[] = [
   { key: "wagon", draw: drawWagon },
   ...EMOTES.map((name, i) => ({ key: `emote_${name}`, draw: () => drawEmote(i) })),
   { key: "glow", draw: drawGlow },
+  { key: "giant_pumpkin", draw: drawGiantPumpkin },
+  ...(["hat", "shirt", "stuffing"] as const).map((kind) => ({ key: `part_${kind}`, draw: () => drawPart(kind) })),
+  { key: "sparkle", draw: drawSparkle },
+  { key: "bowling_pin", draw: drawBowlingPin },
+  { key: "bowling_ball", draw: drawBowlingBall },
+  { key: "apple", draw: drawApple },
   { key: "vignette", draw: drawVignette },
   ...(Object.keys(PROP_ART) as PropType[]).map((type) => ({ key: propTextureKey(type), draw: PROP_ART[type].draw })),
 ];

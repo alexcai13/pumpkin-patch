@@ -30,7 +30,10 @@ export const PlayerState = schema({
   /** 0 or 1: which player this is in the room (decides spawn + race basket). */
   slot: t.uint8(),
 
-  /** What they're holding: "" (nothing), "small" or "big" pumpkin. */
+  /**
+   * What they're holding: "" (nothing), "small" / "big" (race pumpkins), or a
+   * scarecrow part: "hat" / "shirt" / "stuffing".
+   */
   carrying: t.string().default(""),
   /** Points in the current/last pumpkin race. */
   raceScore: t.uint16(),
@@ -42,5 +45,10 @@ export const PlayerState = schema({
 
   /** True while they have the photo booth screen open. */
   inBooth: t.boolean().default(false),
+
+  /** Tickets earned from activities (spent at the prize stand). */
+  tickets: t.uint16().default(0),
+  /** Waiting at the corn maze entrance for the other player. */
+  mazeReady: t.boolean().default(false),
 });
 export type PlayerState = SchemaType<typeof PlayerState>;

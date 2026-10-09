@@ -3,7 +3,7 @@ import type { Delayed } from "colyseus";
 import type { PatchRoom } from "../PatchRoom.js";
 import { PumpkinState } from "../schema/ActivityState.js";
 import { PATCH_MAP } from "../../../../shared/map/patchMap.js";
-import { RACE } from "../../../../shared/constants.js";
+import { RACE, TICKETS } from "../../../../shared/constants.js";
 import type { PickMessage } from "../../../../shared/messages.js";
 
 /** How close (in tiles) you must be to pick a pumpkin or use your basket. */
@@ -16,6 +16,7 @@ PATCH_MAP.rows.forEach((row, y) => {
 });
 
 const FIELD_SIGN = PATCH_MAP.props.find((p) => p.id === "signField")!;
+const isPumpkin = (carrying: string) => carrying === "small" || carrying === "big";
 const basketOf = (slot: number) => PATCH_MAP.props.find((p) => p.id === `basket${slot}`)!;
 
 /**
@@ -47,7 +48,7 @@ export class PickingRace {
     // Must be standing at the field sign.
     if (this.room.tileDistance(player, FIELD_SIGN.x, FIELD_SIGN.y) > REACH) return;
 
-    for (const p of this.room.state.players.values()) { p.raceScore = 0; p.carrying = ""; }
+    for (const p of this.room.state.players.values()) { p.raceScore = 0; if (isPumpkin(p.carrying)) p.carrying = ""; }
     this.race.winner = "";
     this.setPhase("countdown", RACE.countdownSeconds);
   }
@@ -68,13 +69,17 @@ export class PickingRace {
   }
 
   private finish() {
-    // Anything still being carried is lost when the whistle blows.
-    for (const p of this.room.state.players.values()) p.carrying = "";
+    // Pumpkins still being carried are lost when the whistle blows.
+    for (const p of this.room.state.players.values()) if (isPumpkin(p.carrying)) p.carrying = "";
 
     const players = [...this.room.state.players.entries()];
     const best = Math.max(0, ...players.map(([, p]) => p.raceScore));
     const leaders = players.filter(([, p]) => p.raceScore === best);
     this.race.winner = leaders.length === 1 ? leaders[0][0] : "tie";
+    if (players.length > 1) {
+      this.room.awardTickets(players.map(([id]) => id), TICKETS.played);
+      if (leaders.length === 1) this.room.awardTickets([leaders[0][0]], TICKETS.raceWin);
+    }
 
     this.regrow();
     this.setPhase("results", RACE.resultsSeconds);
@@ -94,7 +99,7 @@ export class PickingRace {
   private deliver(client: Client) {
     if (this.race.phase !== "running") return;
     const player = this.room.state.players.get(client.sessionId);
-    if (!player || !player.carrying) return;
+    if (!player || !isPumpkin(player.carrying)) return;
     const basket = basketOf(player.slot);
     if (this.room.tileDistance(player, basket.x, basket.y) > REACH) return;
 

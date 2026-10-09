@@ -62,7 +62,8 @@ export class Hayride {
     const taken = new Set(this.riders().map((p) => p.riding));
     const seat = taken.has(0) ? (taken.has(1) ? -1 : 1) : 0;
     if (seat === -1) return;
-    player.carrying = "";
+    // Race pumpkins don't fit on the wagon (scarecrow parts come along for the ride).
+    if (player.carrying === "small" || player.carrying === "big") player.carrying = "";
     player.riding = seat;
     player.moving = false;
     this.placeRiders();
