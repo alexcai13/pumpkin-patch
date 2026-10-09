@@ -38,5 +38,27 @@ shares the code, the other types it and clicks **Join Room**.
 | Friend's smoothed movement | `client/src/game/net/Interpolator.ts` |
 | Scenes (one per screen/activity) | `client/src/game/scenes/` |
 
+## Controls
+
+Arrows / WASD to walk, Shift to run, **E or Space** to use whatever you're
+facing (a prompt shows when something's usable), **1-4** for emotes.
+
+## Activities so far
+
+| Activity | Where | Server (rules) | Client (visuals) |
+| --- | --- | --- | --- |
+| Emotes | anywhere, keys 1-4 | `activities/Emotes.ts` | `world/activities/EmoteView.ts` |
+| Pumpkin picking race | Pumpkin Field sign | `activities/PickingRace.ts` | `world/activities/RaceView.ts`, `scenes/RaceHud.ts` |
+| Carving station | tables on the porch | `activities/Carving.ts` | `scenes/Carving.ts`, `world/activities/PorchView.ts` |
+| Cider stand benches | benches by the cider stand | `activities/Benches.ts` | `world/activities/BenchView.ts`, `scenes/CiderCozy.ts` |
+| Hayride | wagon at the Hayride sign | `activities/Hayride.ts` | `world/activities/HayrideView.ts` |
+
+Server paths are under `server/src/rooms/`, client paths under `client/src/game/`.
+To add a new "press E here" action, register a provider with
+`ctx.interactions.add(...)` (see `world/Interactions.ts`).
+
+In development you can inspect the game from the browser console via
+`__pumpkin.Network.room.state`.
+
 The server's address comes from `VITE_SERVER_URL` (set it when deploying). If
 it's not set, the client uses port 2567 on the same host that served the page.

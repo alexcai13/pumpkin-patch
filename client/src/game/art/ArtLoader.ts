@@ -4,9 +4,11 @@ import { drawCharacterSheet, drawShadow, CHAR_W, CHAR_H, CHAR_FRAMES } from "./c
 import { drawTileset } from "./tiles";
 import {
   drawTree, drawCorn, drawHay, drawPumpkin, drawLantern, drawFence, drawLeaf,
+  drawWagon, drawBigPumpkin, drawEmote, drawGlow, drawVignette,
   PROP_ART, TREE_VARIANTS, LEAF_COLORS,
 } from "./props";
 import type { PropType } from "../../../../shared/map/legend";
+import { EMOTES } from "../../../../shared/constants";
 
 /**
  * ART REGISTRY
@@ -51,6 +53,11 @@ export const ART: ArtEntry[] = [
   { key: "fenceV", draw: () => drawFence("fenceV") },
   { key: "fencePost", draw: () => drawFence("fencePost") },
   ...LEAF_COLORS.map((_, i) => ({ key: `leaf_${i}`, draw: () => drawLeaf(i) })),
+  { key: "pumpkin_big", draw: drawBigPumpkin },
+  { key: "wagon", draw: drawWagon },
+  ...EMOTES.map((name, i) => ({ key: `emote_${name}`, draw: () => drawEmote(i) })),
+  { key: "glow", draw: drawGlow },
+  { key: "vignette", draw: drawVignette },
   ...(Object.keys(PROP_ART) as PropType[]).map((type) => ({ key: propTextureKey(type), draw: PROP_ART[type].draw })),
 ];
 

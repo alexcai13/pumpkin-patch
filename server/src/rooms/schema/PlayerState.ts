@@ -26,5 +26,18 @@ export const PlayerState = schema({
    * them faded out meanwhile.
    */
   connected: t.boolean().default(true),
+
+  /** 0 or 1: which player this is in the room (decides spawn + race basket). */
+  slot: t.uint8(),
+
+  /** What they're holding: "" (nothing), "small" or "big" pumpkin. */
+  carrying: t.string().default(""),
+  /** Points in the current/last pumpkin race. */
+  raceScore: t.uint16(),
+
+  /** Bench seat like "bench1:0" while sitting at the cider stand, else "". */
+  seat: t.string().default(""),
+  /** Hayride seat 0/1 while riding the wagon, -1 when not riding. */
+  riding: t.int8().default(-1),
 });
 export type PlayerState = SchemaType<typeof PlayerState>;

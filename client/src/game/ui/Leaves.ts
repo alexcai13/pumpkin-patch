@@ -11,7 +11,12 @@ import { LEAF_COLORS } from "../art/props";
 export class Leaves {
   private leaves: { img: Phaser.GameObjects.Image; vx: number; vy: number; phase: number; spin: number }[] = [];
 
-  constructor(private scene: Phaser.Scene, count: number, private scale = 3, depth = 999_999) {
+  /**
+   * @param count how many leaves (keep it modest on Chromebooks)
+   * @param scale on-screen size of each leaf pixel
+   * @param wind  1 = gentle drift; higher = a breezier gust
+   */
+  constructor(private scene: Phaser.Scene, count: number, private scale = 3, depth = 999_999, private wind = 1) {
     for (let i = 0; i < count; i++) {
       const img = scene.add.image(0, 0, `leaf_${i % LEAF_COLORS.length}`)
         .setScrollFactor(0)
@@ -25,9 +30,11 @@ export class Leaves {
 
   private reset(leaf: Leaves["leaves"][number], anywhere: boolean) {
     const { width, height } = this.scene.scale;
-    leaf.img.x = Math.random() * width;
-    leaf.img.y = anywhere ? Math.random() * height : -10;
-    leaf.vx = 10 + Math.random() * 25;  // drift right, like a breeze
+    // Windy leaves blow in from the left edge; calm ones fall from the top.
+    const fromSide = !anywhere && this.wind > 1 && Math.random() < 0.6;
+    leaf.img.x = fromSide ? -10 : Math.random() * width;
+    leaf.img.y = anywhere ? Math.random() * height : fromSide ? Math.random() * height * 0.8 : -10;
+    leaf.vx = (10 + Math.random() * 25) * this.wind * this.wind; // drift right, like a breeze
     leaf.vy = 18 + Math.random() * 22;
     leaf.phase = Math.random() * Math.PI * 2;
     leaf.spin = (Math.random() - 0.5) * 3;

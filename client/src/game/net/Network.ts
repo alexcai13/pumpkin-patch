@@ -25,14 +25,23 @@ class NetworkManager {
 
   async createRoom(options: JoinOptions) {
     this.room = await this.client.create<PatchState>("patch", options);
-    this.watchUnload();
+    await this.afterJoin();
     return this.room;
   }
 
   async joinRoom(code: string, options: JoinOptions) {
     this.room = await this.client.joinById<PatchState>(normalizeCode(code), options);
-    this.watchUnload();
+    await this.afterJoin();
     return this.room;
+  }
+
+  /** Wait for the first full copy of the room state, so scenes can read it right away. */
+  private async afterJoin() {
+    const room = this.room!;
+    this.watchUnload();
+    if (room.state?.players === undefined || room.state.hayride === undefined) {
+      await new Promise<void>((resolve) => room.onStateChange.once(() => resolve()));
+    }
   }
 
   /**

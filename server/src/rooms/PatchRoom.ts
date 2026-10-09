@@ -1,6 +1,7 @@
 import { Room, Client, CloseCode } from "colyseus";
 import { PatchState } from "./schema/PatchState.js";
 import { PlayerState } from "./schema/PlayerState.js";
+import { RaceState, HayrideState } from "./schema/ActivityState.js";
 import { claimRoomCode, releaseRoomCode } from "./roomCodes.js";
 import { PATCH_MAP } from "../../../shared/map/patchMap.js";
 import { CollisionGrid } from "../../../shared/map/collision.js";
@@ -8,9 +9,11 @@ import {
   TILE, MAX_PLAYERS, PLAYER_COLORS, NAME_MAX, RUN_STEP_MS, Dir,
 } from "../../../shared/constants.js";
 import type { JoinOptions, MoveMessage, CorrectMessage } from "../../../shared/messages.js";
-
-/** Built once and shared by every room: the map never changes at runtime. */
-const collision = new CollisionGrid(PATCH_MAP);
+import { Emotes } from "./activities/Emotes.js";
+import { PickingRace } from "./activities/PickingRace.js";
+import { Carving } from "./activities/Carving.js";
+import { Benches } from "./activities/Benches.js";
+import { Hayride } from "./activities/Hayride.js";
 
 /** Fastest legal speed in px/sec (running), plus 25% slack for timing jitter. */
 const MAX_SPEED = (TILE / (RUN_STEP_MS / 1000)) * 1.25;
@@ -25,7 +28,6 @@ const MAX_BUDGET = MAX_SPEED * 1.5;
 interface MoveGuard {
   budget: number;
   lastTime: number;
-  spawnIndex: number;
 }
 
 export class PatchRoom extends Room<{ state: PatchState }> {
@@ -35,7 +37,18 @@ export class PatchRoom extends Room<{ state: PatchState }> {
   /** Seconds the server holds a dropped player's seat before removing them. */
   static RECONNECT_SECONDS = 15;
 
+  /**
+   * Walkability for THIS room. Each room has its own copy because some things
+   * (like the parked hayride wagon) block tiles only some of the time.
+   */
+  readonly collision = new CollisionGrid(PATCH_MAP);
+
   private guards = new Map<string, MoveGuard>();
+
+  // Each activity lives in its own file under activities/ and registers its
+  // own message handlers. They're created in onCreate.
+  private race!: PickingRace;
+  private hayride!: Hayride;
 
   messages = {
     /** A client reports where its own character is (≈15 times per second). */
@@ -44,6 +57,8 @@ export class PatchRoom extends Room<{ state: PatchState }> {
       const guard = this.guards.get(client.sessionId);
       if (!player || !guard || !msg) return;
       if (!Number.isFinite(msg.x) || !Number.isFinite(msg.y)) return;
+      // Sitting or riding: the server places them, so ignore their reports.
+      if (player.seat || player.riding >= 0) return;
 
       // Refill the movement budget for the time that passed.
       const now = Date.now();
@@ -51,13 +66,13 @@ export class PatchRoom extends Room<{ state: PatchState }> {
       guard.lastTime = now;
 
       const dist = Math.hypot(msg.x - player.x, msg.y - player.y);
-      const tx = Math.floor(msg.x / TILE);
-      const ty = Math.floor(msg.y / TILE);
+      // Walking INTO a blocked tile is cheating, but walking OUT of one is fine
+      // (e.g. the wagon parked on top of you).
+      const intoWall = this.blockedAt(msg.x, msg.y) && !this.blockedAt(player.x, player.y);
 
-      if (dist > guard.budget || collision.isBlocked(tx, ty)) {
+      if (dist > guard.budget || intoWall) {
         // Too fast or inside a wall: send them back to the last good spot.
-        const correction: CorrectMessage = { x: player.x, y: player.y };
-        client.send("correct", correction);
+        this.teleport(client, player.x, player.y);
         return;
       }
 
@@ -73,17 +88,29 @@ export class PatchRoom extends Room<{ state: PatchState }> {
   onCreate() {
     // The short code doubles as the Colyseus room id, so joinById(code) works.
     this.roomId = claimRoomCode();
+    this.state.race = new RaceState();
+    this.state.hayride = new HayrideState();
+
+    new Emotes(this);
+    this.race = new PickingRace(this);
+    new Carving(this);
+    new Benches(this);
+    this.hayride = new Hayride(this);
+
+    // 20 updates per second for things that move on their own (the wagon).
+    this.setSimulationInterval((dt) => this.hayride.update(dt), 50);
     console.log(`room ${this.roomId} created`);
   }
 
   onJoin(client: Client, options: JoinOptions) {
-    // Pick the first spawn point nobody is standing on yet.
-    const taken = new Set([...this.guards.values()].map((g) => g.spawnIndex));
-    const spawnIndex = PATCH_MAP.spawns.findIndex((_, i) => !taken.has(i));
-    const spawn = PATCH_MAP.spawns[Math.max(0, spawnIndex)];
+    // Take the first free slot (0 or 1); it decides spawn point and basket.
+    const taken = new Set([...this.state.players.values()].map((p) => p.slot));
+    const slot = taken.has(0) ? 1 : 0;
+    const spawn = PATCH_MAP.spawns[slot];
+    const name = cleanName(options?.name);
 
     this.state.players.set(client.sessionId, new PlayerState({
-      name: cleanName(options?.name),
+      name,
       color: clampInt(options?.color, 0, PLAYER_COLORS.length - 1),
       // Positions are tile centers in world pixels.
       x: spawn.x * TILE + TILE / 2,
@@ -92,10 +119,12 @@ export class PatchRoom extends Room<{ state: PatchState }> {
       moving: false,
       running: false,
       connected: true,
+      slot,
+      raceScore: 0,
     }));
-    this.guards.set(client.sessionId, { budget: 0, lastTime: Date.now(), spawnIndex: Math.max(0, spawnIndex) });
+    this.guards.set(client.sessionId, { budget: 0, lastTime: Date.now() });
 
-    console.log(`${this.roomId}: ${client.sessionId} joined as "${cleanName(options?.name)}"`);
+    console.log(`${this.roomId}: ${client.sessionId} joined as "${name}"`);
   }
 
   /**
@@ -128,13 +157,59 @@ export class PatchRoom extends Room<{ state: PatchState }> {
   /** Player is gone for good (left on purpose, or never came back). */
   onLeave(client: Client, code: CloseCode) {
     console.log(`${this.roomId}: ${client.sessionId} left (code ${code})`);
+    this.race.onPlayerLeave(client.sessionId);
     this.state.players.delete(client.sessionId);
     this.guards.delete(client.sessionId);
+    // Someone who left can no longer be "missing" from the wagon.
+    this.hayride.onPlayerLeave();
   }
 
   onDispose() {
     console.log(`room ${this.roomId} disposed`);
     releaseRoomCode(this.roomId);
+  }
+
+  // ------------------------------------------------------------ helpers for activities
+
+  blockedAt(x: number, y: number) {
+    return this.collision.isBlocked(Math.floor(x / TILE), Math.floor(y / TILE));
+  }
+
+  /** Move a player somewhere and tell their client to snap there. */
+  teleport(client: Client, x: number, y: number) {
+    const player = this.state.players.get(client.sessionId);
+    if (player) {
+      player.x = x;
+      player.y = y;
+      player.moving = false;
+    }
+    const guard = this.guards.get(client.sessionId);
+    if (guard) guard.budget = 0;
+    const msg: CorrectMessage = { x, y };
+    client.send("teleport", msg);
+  }
+
+  clientOf(sessionId: string) {
+    return this.clients.find((c) => c.sessionId === sessionId);
+  }
+
+  /** Is anyone (other than `except`) standing on / sitting at this tile? */
+  isTileFree(tx: number, ty: number) {
+    if (this.collision.isBlocked(tx, ty)) return false;
+    for (const p of this.state.players.values()) {
+      if (Math.floor(p.x / TILE) === tx && Math.floor(p.y / TILE) === ty) return false;
+    }
+    return true;
+  }
+
+  /** Distance in tiles between a player and the center of a tile. */
+  tileDistance(player: PlayerState, tx: number, ty: number) {
+    return Math.hypot(player.x - (tx * TILE + TILE / 2), player.y - (ty * TILE + TILE / 2)) / TILE;
+  }
+
+  /** Is the player busy with something that should block other activities? */
+  isBusy(player: PlayerState) {
+    return !!player.seat || player.riding >= 0;
   }
 }
 

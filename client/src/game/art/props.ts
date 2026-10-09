@@ -325,7 +325,8 @@ function drawTossFlag() {
   return canvas;
 }
 
-function drawWagon() {
+/** The hayride wagon (64x44). It's drawn as its own texture because it moves. */
+export function drawWagon() {
   const W = 64, H = 44;
   const { canvas, ctx } = makeCanvas(W, H);
   // Tongue / hitch on the left
@@ -391,6 +392,19 @@ function drawPhotoBooth() {
   return canvas;
 }
 
+function drawBasket() {
+  const { canvas, ctx } = makeCanvas(16, 18);
+  // Handle
+  ellipse(ctx, 8, 7, 6, 6, P.outline); ellipse(ctx, 8, 7, 5, 5, P.woodLight); ellipse(ctx, 8, 7, 4, 4, "rgba(0,0,0,0)");
+  ctx.clearRect(3, 4, 10, 5);
+  rect(ctx, 2, 3, 1, 6, P.outline); rect(ctx, 13, 3, 1, 6, P.outline); rect(ctx, 3, 1, 10, 1, P.outline); rect(ctx, 3, 2, 10, 1, P.woodLight);
+  // Woven body
+  outlineRect(ctx, 1, 8, 14, 10, P.wood);
+  for (let y = 9; y < 17; y += 2) for (let x = 2 + (y % 4 === 1 ? 0 : 1); x < 14; x += 2) px(ctx, x, y, P.woodDark);
+  rect(ctx, 1, 8, 14, 2, P.woodLight); rect(ctx, 1, 8, 14, 1, P.outline);
+  return canvas;
+}
+
 export interface PropArt {
   draw: () => HTMLCanvasElement;
   /**
@@ -414,7 +428,7 @@ export const PROP_ART: Record<PropType, PropArt> = {
   bowlingPins: { draw: drawBowlingPins },
   appleBarrel: { draw: drawAppleBarrel },
   tossFlag: { draw: drawTossFlag },
-  wagon: { draw: drawWagon },
+  basket: { draw: drawBasket },
   prizeStand: { draw: drawPrizeStand },
   photoBooth: { draw: drawPhotoBooth, depthRow: 0 },
 };
@@ -432,5 +446,75 @@ export function drawLeaf(variant: number) {
   rect(ctx, 1, 3, 2, 1, c);
   px(ctx, 4, 3, P.woodDark); // stem
   px(ctx, 1, 1, P.goldLight);
+  return canvas;
+}
+
+/** Big field pumpkin (worth 3 points, slows you down). 22x18. */
+export function drawBigPumpkin() {
+  const { canvas, ctx } = makeCanvas(22, 18);
+  ctx.globalAlpha = 0.3; ellipse(ctx, 11, 16, 10, 2, P.black); ctx.globalAlpha = 1;
+  pumpkinShape(ctx, 11, 11, 9.5, 5.5);
+  return canvas;
+}
+
+/** Emote speech bubbles (13x13): heart, laugh, wave, exclaim. */
+export function drawEmote(kind: number) {
+  const { canvas, ctx } = makeCanvas(13, 13);
+  outlineRect(ctx, 0, 0, 13, 11, P.cream);
+  px(ctx, 0, 0, "rgba(0,0,0,0)"); px(ctx, 12, 0, "rgba(0,0,0,0)");
+  ctx.clearRect(0, 0, 1, 1); ctx.clearRect(12, 0, 1, 1); ctx.clearRect(0, 10, 1, 1); ctx.clearRect(12, 10, 1, 1);
+  rect(ctx, 5, 11, 3, 1, P.outline); px(ctx, 6, 12, P.outline); px(ctx, 6, 11, P.cream); // tail
+  const art: Record<number, string[]> = {
+    0: [".rr.rr.", "rrrrrrr", "rrrrrrr", ".rrrrr.", "..rrr..", "...r..."],          // heart
+    1: ["o.....o", ".o...o.", ".......", "ooooooo", ".orrro.", "..ooo.."],          // laughing face ^ ^ D
+    2: ["..s.s..", ".ss.ss.", ".sssss.", "ssssss.", ".ssss..", "..ss..."],          // waving hand
+    3: ["...o...", "..ooo..", "..ooo..", "...o...", ".......", "...o..."],          // !
+  };
+  const pal = { r: P.red, o: P.outline, s: "#f4c99b" };
+  art[kind].forEach((row, y) => { for (let x = 0; x < row.length; x++) { const c = (pal as Record<string, string>)[row[x]]; if (c) px(ctx, 3 + x, 2 + y, c); } });
+  if (kind === 3) { rect(ctx, 6, 2, 1, 4, P.orangeDark); rect(ctx, 6, 7, 1, 1, P.orangeDark); }
+  return canvas;
+}
+
+/** A soft round glow (drawn additively behind lit jack-o'-lanterns). */
+export function drawGlow() {
+  const { canvas, ctx } = makeCanvas(48, 48);
+  const g = ctx.createRadialGradient(24, 24, 0, 24, 24, 24);
+  g.addColorStop(0, "rgba(255, 200, 90, 0.9)");
+  g.addColorStop(0.4, "rgba(255, 150, 50, 0.35)");
+  g.addColorStop(1, "rgba(255, 120, 30, 0)");
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, 48, 48);
+  return canvas;
+}
+
+/** Screen-edge darkening for cozy moments. */
+export function drawVignette() {
+  const { canvas, ctx } = makeCanvas(256, 256);
+  const g = ctx.createRadialGradient(128, 128, 60, 128, 128, 180);
+  g.addColorStop(0, "rgba(60, 25, 10, 0)");
+  g.addColorStop(1, "rgba(60, 25, 10, 0.55)");
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, 256, 256);
+  return canvas;
+}
+
+/**
+ * A finished carved pumpkin for the porch, 20x16. The 32x24 carving grid is
+ * shrunk 2x onto the pumpkin's face; a carved spot shows if any of the 4 grid
+ * pixels it covers was carved.
+ */
+export function drawCarvedPumpkin(pixels: Uint8Array, gridW: number, gridH: number) {
+  const { canvas, ctx } = makeCanvas(20, 16);
+  pumpkinShape(ctx, 10, 9.5, 9, 5.5);
+  for (let y = 0; y < gridH / 2; y++) {
+    for (let x = 0; x < gridW / 2; x++) {
+      const i = y * 2 * gridW + x * 2;
+      if (pixels[i] || pixels[i + 1] || pixels[i + gridW] || pixels[i + gridW + 1]) {
+        // Face area is 16x12, centered on the pumpkin body.
+        px(ctx, 2 + x, 4 + y, P.glow);
+      }
+    }
+  }
   return canvas;
 }

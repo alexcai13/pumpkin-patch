@@ -105,9 +105,14 @@ export const PATCH_MAP: MapDef = {
     { id: "tossFlag2", type: "tossFlag", x: 18, y: 36, w: 1, h: 1, solid: "none" },
     { id: "tossFlag3", type: "tossFlag", x: 21, y: 36, w: 1, h: 1, solid: "none" },
 
-    // --- South-middle: hayride wagon stop ---
-    { id: "wagon", type: "wagon", x: 29, y: 32, w: 4, h: 2, solid: "all" },
+    // --- Pumpkin race baskets (player 1 = basket0, player 2 = basket1) ---
+    { id: "basket0", type: "basket", x: 27, y: 28, w: 1, h: 1, solid: "all" },
+    { id: "basket1", type: "basket", x: 34, y: 28, w: 1, h: 1, solid: "all" },
+
+    // --- South-middle: hayride wagon stop (the wagon itself is in `hayride` below) ---
     { id: "signHayride", type: "sign", x: 27, y: 31, w: 1, h: 1, solid: "all", label: "Hayride" },
+    { id: "signStopFarm", type: "sign", x: 24, y: 11, w: 1, h: 1, solid: "all", label: "Hayride Stop" },
+    { id: "signStopMaze", type: "sign", x: 45, y: 11, w: 1, h: 1, solid: "all", label: "Hayride Stop" },
 
     // --- South-east: ticket/prize stand + photo booth ---
     { id: "prizeStand", type: "prizeStand", x: 44, y: 32, w: 5, h: 3, solid: "all" },
@@ -116,6 +121,37 @@ export const PATCH_MAP: MapDef = {
     { id: "photoBooth", type: "photoBooth", x: 52, y: 32, w: 3, h: 3, solid: ["xxx", "x.x", "x.x"] },
     { id: "signPhoto", type: "sign", x: 55, y: 32, w: 1, h: 1, solid: "all", label: "Photo Booth" },
   ],
+
+  /**
+   * Spots on the porch where finished carved pumpkins sit (tile coords), in
+   * the order they fill up: starting beside the door and working outward.
+   * Row 8 is the porch against the house wall; x 7-8 is the doorway, and
+   * x 2 is skipped because the border trees hide it.
+   */
+  porchSpots: [
+    { x: 6, y: 8 }, { x: 9, y: 8 }, { x: 5, y: 8 }, { x: 10, y: 8 },
+    { x: 4, y: 8 }, { x: 11, y: 8 }, { x: 3, y: 8 }, { x: 12, y: 8 },
+  ],
+
+  /**
+   * The hayride. The wagon (4x2 tiles) parks at `home` (top-left tile), then
+   * drives through `route` — points are the wagon's CENTER in tile units
+   * (x 31 = the line between tile 30 and 31). Points with `stop` are stations
+   * where it pauses and riders can hop off (fast travel!).
+   */
+  hayride: {
+    home: { x: 29, y: 32, w: 4, h: 2 },
+    route: [
+      { x: 31, y: 30 },
+      { x: 15, y: 30 },
+      { x: 15, y: 13 },
+      { x: 25, y: 13, stop: "Farmhouse & Cider" },
+      { x: 47, y: 13, stop: "Corn Maze" },
+      { x: 47, y: 30 },
+      { x: 31, y: 30 },
+      { x: 31, y: 33 }, // back home
+    ],
+  },
 
   /** Where players appear when they join (tile coordinates). Player 1 gets the first. */
   spawns: [

@@ -29,6 +29,8 @@ export class PlayerController {
   running = false;
   /** When false, keyboard input is ignored (menus, minigames, hayride...). */
   enabled = true;
+  /** Multiplies how long each step takes (carrying a big pumpkin = slower). */
+  stepMultiplier = 1;
 
   private fromX = 0; private fromY = 0;
   private toX = 0; private toY = 0;
@@ -69,6 +71,11 @@ export class PlayerController {
     this.character.setPosition(tx * TILE + TILE / 2, ty * TILE + TILE / 2);
   }
 
+  /** The direction key currently held (newest wins), or undefined. */
+  heldDirection(): Dir | undefined {
+    return this.held[this.held.length - 1];
+  }
+
   /** Tile the character is facing (handy for interactions in phase 2). */
   facingTile() {
     const v = DIR_VECTORS[this.character.dir];
@@ -97,7 +104,7 @@ export class PlayerController {
     // Advance the current step. A loop so that leftover time after reaching
     // a tile flows straight into the next step: no stutter between tiles.
     while (this.moving && remaining > 0) {
-      const stepMs = this.running ? RUN_STEP_MS : WALK_STEP_MS;
+      const stepMs = (this.running ? RUN_STEP_MS : WALK_STEP_MS) * this.stepMultiplier;
       const needed = (1 - this.progress) * stepMs;
       if (remaining < needed) {
         this.progress += remaining / stepMs;

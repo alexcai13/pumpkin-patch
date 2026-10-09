@@ -4,6 +4,9 @@ import { Preloader } from "./scenes/Preloader";
 import { Title } from "./scenes/Title";
 import { World } from "./scenes/World";
 import { Hud } from "./scenes/Hud";
+import { RaceHud } from "./scenes/RaceHud";
+import { Carving } from "./scenes/Carving";
+import { CiderCozy } from "./scenes/CiderCozy";
 
 //  Game config docs: https://docs.phaser.io/api-documentation/typedef/types-core#gameconfig
 const config: Phaser.Types.Core.GameConfig = {
@@ -18,9 +21,18 @@ const config: Phaser.Types.Core.GameConfig = {
   scale: { mode: Scale.RESIZE, width: window.innerWidth, height: window.innerHeight },
   // Keep frame pacing gentle on low-end Chromebooks.
   fps: { target: 60 },
-  scene: [Boot, Preloader, Title, World, Hud],
+  // Order matters for drawing: later scenes draw on top of earlier ones.
+  scene: [Boot, Preloader, Title, World, CiderCozy, Hud, RaceHud, Carving],
 };
 
-const StartGame = (parent: string) => new Game({ ...config, parent });
+const StartGame = (parent: string) => {
+  const game = new Game({ ...config, parent });
+  // Development only: poke at the game from the browser console, e.g.
+  // __pumpkin.Network.room.state.players
+  if (import.meta.env.DEV) {
+    import("./net/Network").then(({ Network }) => { (window as any).__pumpkin = { game, Network }; });
+  }
+  return game;
+};
 
 export default StartGame;

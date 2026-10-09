@@ -23,4 +23,8 @@ using the texture key below. Anything not listed keeps using the generated art.
 | `hay`, `pumpkin`, `lantern`, `lantern_lit` | 16 x 16 | |
 | `fenceH`, `fenceV`, `fencePost` | 16 x 20 | |
 | `leaf_0` … `leaf_2` | 5 x 4 | Falling leaf particles. |
+| `pumpkin_big` | 22 x 18 | Big field pumpkin (3 points). |
+| `wagon` | 64 x 44 | Hayride wagon; the bottom 32 px is its 4x2-tile footprint. |
+| `emote_heart`, `emote_laugh`, `emote_wave`, `emote_exclaim` | 13 x 13 | Emote bubbles. |
+| `glow`, `vignette` | 48 x 48, 256 x 256 | Soft light / screen-edge shading. |
 | `prop_<type>` | (w x 16) x (h x 16 + overhang) | Multi-tile props, e.g. `prop_farmhouse` (144 x 112). Bottom-left sits on the prop's footprint. |

@@ -40,3 +40,34 @@ export const NAME_MAX = 12;
 /** Facing directions. Numbers so they pack into a single byte in the schema. */
 export const Dir = { Down: 0, Left: 1, Right: 2, Up: 3 } as const;
 export type Dir = (typeof Dir)[keyof typeof Dir];
+
+// ---------------------------------------------------------------- activities
+
+/** Emotes on number keys 1-4. The index is what gets sent over the network. */
+export const EMOTES = ["heart", "laugh", "wave", "exclaim"] as const;
+
+/** Pumpkin picking race tuning. */
+export const RACE = {
+  countdownSeconds: 3,
+  durationSeconds: 60,
+  resultsSeconds: 8,
+  smallPumpkins: 18,
+  bigPumpkins: 6,
+  smallPoints: 1,
+  bigPoints: 3,
+  /** Carrying a big pumpkin makes each step take this many times longer. */
+  bigSlowdown: 1.7,
+};
+
+/** Hayride wagon speed in pixels per second, and how long it waits at stations. */
+export const HAYRIDE = {
+  speed: 52,
+  stopSeconds: 6,
+  departDelaySeconds: 2,
+  /** Where the two riders sit, relative to the wagon center (pixels). */
+  seats: [{ x: -11, y: -9 }, { x: 11, y: -9 }],
+};
+
+/** Carving canvas size (pixels of the carving grid). */
+export const CARVE_W = 32;
+export const CARVE_H = 24;

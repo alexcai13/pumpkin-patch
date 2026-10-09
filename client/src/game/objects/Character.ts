@@ -1,5 +1,5 @@
 import * as Phaser from "phaser";
-import { Dir } from "../../../../shared/constants";
+import { Dir, EMOTES } from "../../../../shared/constants";
 import { DIR_FRAMES } from "../art/characters";
 import { playerTextureKey } from "../art/ArtLoader";
 import { FONT } from "../ui/fonts";
@@ -10,9 +10,11 @@ export const OVERLAY_DEPTH = 1_000_000;
 export const SHADOW_DEPTH = 1;
 
 /**
- * A character on the map: sprite + shadow + name tag.
+ * A character on the map: sprite + shadow + name tag, plus the extras that
+ * activities need (a carried pumpkin, emote bubbles, sitting).
  * Used for both the local player and the remote one. It only DRAWS; who
- * decides where it goes is PlayerController (local) or the interpolator (remote).
+ * decides where it goes is PlayerController (local), the interpolator
+ * (remote), or the activity they're in (bench / wagon).
  *
  * (x, y) is the character's feet — the middle of the tile they stand on.
  */
@@ -23,12 +25,17 @@ export class Character {
   x: number;
   y: number;
   dir: Dir = Dir.Down;
-  private colorIndex: number;
 
-  constructor(private scene: Phaser.Scene, x: number, y: number, colorIndex: number, name: string, isLocal: boolean) {
+  private carryImage?: Phaser.GameObjects.Image;
+  private carrying = "";
+  private emote?: Phaser.GameObjects.Image;
+  private sitting = false;
+  /** When set, overrides Y-sorting (riders draw just above the wagon). */
+  depthOverride: number | null = null;
+
+  constructor(private scene: Phaser.Scene, x: number, y: number, private colorIndex: number, name: string, isLocal: boolean) {
     this.x = x;
     this.y = y;
-    this.colorIndex = colorIndex;
     Character.ensureAnimations(scene, colorIndex);
 
     this.shadow = scene.add.image(x, y, "shadow").setDepth(SHADOW_DEPTH);
@@ -74,7 +81,7 @@ export class Character {
   setPose(dir: Dir, moving: boolean, running = false) {
     this.dir = dir;
     const key = playerTextureKey(this.colorIndex);
-    if (moving) {
+    if (moving && !this.sitting) {
       this.sprite.anims.play(`${key}_walk_${dir}`, true);
       this.sprite.anims.timeScale = running ? 1.6 : 1;
     } else {
@@ -83,14 +90,57 @@ export class Character {
     }
   }
 
+  /** Sitting on a bench or the hayride: drawn a bit higher, no walking. */
+  setSitting(sitting: boolean) {
+    if (sitting === this.sitting) return;
+    this.sitting = sitting;
+    this.shadow.setVisible(!sitting);
+    this.syncDisplay();
+  }
+
+  /** Hold a pumpkin over your head ("" = empty hands). */
+  setCarrying(kind: string) {
+    if (kind === this.carrying) return;
+    const picked = !this.carrying && !!kind;
+    this.carrying = kind;
+    this.carryImage?.destroy();
+    this.carryImage = undefined;
+    if (kind) {
+      this.carryImage = this.scene.add.image(this.x, this.y, kind === "big" ? "pumpkin_big" : "pumpkin").setOrigin(0.5, 1);
+    }
+    if (picked) this.squash();
+    this.syncDisplay();
+  }
+
+  /** A quick squash-and-stretch bounce (picking things up, landing). */
+  squash() {
+    this.sprite.setScale(1.2, 0.8);
+    this.scene.tweens.add({ targets: this.sprite, scaleX: 1, scaleY: 1, duration: 260, ease: "Back.easeOut" });
+  }
+
+  /** Pop an emote bubble above the head for a moment. */
+  showEmote(kind: number) {
+    const name = EMOTES[kind];
+    if (!name) return;
+    this.emote?.destroy();
+    const bubble = this.scene.add.image(this.x, this.y, `emote_${name}`).setOrigin(0.5, 1).setDepth(OVERLAY_DEPTH + 1).setScale(0);
+    this.emote = bubble;
+    this.syncDisplay();
+    this.scene.tweens.add({ targets: bubble, scale: 1, duration: 220, ease: "Back.easeOut" });
+    this.scene.tweens.add({
+      targets: bubble, alpha: 0, delay: 1500, duration: 300,
+      onComplete: () => { bubble.destroy(); if (this.emote === bubble) this.emote = undefined; },
+    });
+  }
+
   setAlpha(alpha: number) {
-    for (const obj of [this.sprite, this.shadow, this.nameTag]) obj.setAlpha(alpha);
+    for (const obj of [this.sprite, this.shadow, this.nameTag, this.carryImage]) obj?.setAlpha(alpha);
   }
 
   /** Fade everything out, then remove it. */
   fadeOutAndDestroy(onDone?: () => void) {
     this.scene.tweens.add({
-      targets: [this.sprite, this.shadow, this.nameTag],
+      targets: [this.sprite, this.shadow, this.nameTag, this.carryImage].filter(Boolean),
       alpha: 0,
       duration: 900,
       onComplete: () => { this.destroy(); onDone?.(); },
@@ -98,19 +148,32 @@ export class Character {
   }
 
   destroy() {
-    this.sprite.destroy();
-    this.shadow.destroy();
-    this.nameTag.destroy();
+    for (const obj of [this.sprite, this.shadow, this.nameTag, this.carryImage, this.emote]) obj?.destroy();
+  }
+
+  /** Where the top of the head (plus anything held) is, for stacking labels. */
+  get headTop() {
+    let top = Math.round(this.y) - 14 - (this.sitting ? 3 : 0);
+    if (this.carryImage) top -= this.carryImage.height - 2;
+    return top;
   }
 
   private syncDisplay() {
     // Round to whole pixels so the sprite never lands "between" pixels and blurs.
     const x = Math.round(this.x);
     const y = Math.round(this.y);
-    this.sprite.setPosition(x, y + 6);
+    const lift = this.sitting ? 3 : 0;
+    this.sprite.setPosition(x, y + 6 - lift);
     this.shadow.setPosition(x, y + 5);
-    this.nameTag.setPosition(x, y - 15);
     // Y-sorting: lower on screen = drawn in front.
-    this.sprite.setDepth(this.y);
+    const depth = this.depthOverride ?? this.y;
+    this.sprite.setDepth(depth);
+
+    if (this.carryImage) {
+      this.carryImage.setPosition(x, y - 12 - lift).setDepth(depth + 0.01);
+    }
+    const top = this.headTop;
+    this.nameTag.setPosition(x, top - 1);
+    this.emote?.setPosition(x, top - 11);
   }
 }

@@ -29,7 +29,7 @@ export class Hud extends Scene {
     const code = Network.room?.roomId ?? "?????";
     this.add.text(12, 10, `Room code: ${code}`, textStyle(18, "#ffe08a"));
     this.waitText = this.add.text(12, 34, "", textStyle(14, "#f1e3c2"));
-    this.add.text(12, this.scale.height - 26, "Move: Arrows / WASD    Run: Shift", textStyle(13, "#f1e3c2"))
+    this.add.text(12, this.scale.height - 26, "Move: Arrows / WASD    Run: Shift    Use: E / Space    Emotes: 1 ♥  2 laugh  3 wave  4 !", textStyle(13, "#f1e3c2"))
       .setAlpha(0.8)
       .setName("help");
     this.layout();

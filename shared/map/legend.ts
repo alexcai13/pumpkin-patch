@@ -44,7 +44,7 @@ export const LEGEND: Record<string, TileInfo> = {
 export type PropType =
   | "farmhouse" | "carvingTable" | "ciderStand" | "bench" | "sign"
   | "mazeArch" | "scarecrowPost" | "bowlingPins" | "appleBarrel" | "tossFlag"
-  | "wagon" | "prizeStand" | "photoBooth";
+  | "prizeStand" | "photoBooth" | "basket";
 
 export interface PropDef {
   /** Unique name, used later to hook up interactions. */
@@ -62,8 +62,17 @@ export interface PropDef {
   label?: string;
 }
 
+export interface HayrideDef {
+  /** Footprint of the parked wagon (top-left tile + size in tiles). */
+  home: { x: number; y: number; w: number; h: number };
+  /** Wagon-center waypoints in tile units; `stop` marks a station. */
+  route: { x: number; y: number; stop?: string }[];
+}
+
 export interface MapDef {
   rows: string[];
   props: PropDef[];
   spawns: { x: number; y: number }[];
+  porchSpots?: { x: number; y: number }[];
+  hayride?: HayrideDef;
 }
