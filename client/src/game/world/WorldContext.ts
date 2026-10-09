@@ -29,4 +29,6 @@ export interface WorldContext {
   controller(): PlayerController | undefined;
   /** The image drawn for a map prop (by prop id), e.g. to change its look. */
   propImage(id: string): Phaser.GameObjects.Image | undefined;
+  /** Add a soft light that glows at dusk (world coords). */
+  addGlow(x: number, y: number, scale?: number): void;
 }

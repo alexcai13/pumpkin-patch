@@ -4,6 +4,7 @@ import type { PlayerState } from "../../../../server/src/rooms/schema/PlayerStat
 import { Network } from "../net/Network";
 import { FONT } from "../ui/fonts";
 import { P } from "../art/palette";
+import { Sound } from "../audio/Sound";
 
 interface MinigameData { onClose?: () => void }
 
@@ -139,6 +140,7 @@ export abstract class MinigameScene extends Phaser.Scene {
   private showResults() {
     const key = `results:${this.mg.winner}`;
     if (this.overlayFor === key) return;
+    Sound.play("win");
     this.hideOverlay();
     this.overlayFor = key;
     const mg = this.mg;

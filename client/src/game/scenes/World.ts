@@ -23,6 +23,11 @@ import { GiantView } from "../world/activities/GiantView";
 import { ScarecrowView } from "../world/activities/ScarecrowView";
 import { MazeView } from "../world/activities/MazeView";
 import { MinigameView } from "../world/activities/MinigameView";
+import { ShopView } from "../world/activities/ShopView";
+import { FarmerView } from "../world/activities/FarmerView";
+import { CrowView } from "../world/activities/CrowView";
+import { DayCycle } from "../world/DayCycle";
+import { Leaves } from "../ui/Leaves";
 import { HudEvents } from "./Hud";
 
 interface RemotePlayer {
@@ -59,6 +64,10 @@ export class World extends Scene {
   private giant!: GiantView;
   private scarecrow!: ScarecrowView;
   private mazeView!: MazeView;
+  private farmer!: FarmerView;
+  private crow!: CrowView;
+  private day!: DayCycle;
+  private leaves?: Leaves;
 
   constructor() {
     super("World");
@@ -78,6 +87,11 @@ export class World extends Scene {
     this.cameras.main.setBounds(0, 0, this.builder.widthPx, this.builder.heightPx);
     this.cameras.main.setBackgroundColor("#2a1a14");
     this.interactions = new Interactions(this);
+    this.day = new DayCycle(this, this.room);
+    // Jack-o'-lanterns on the map light up at dusk; so do the farmhouse windows.
+    this.builder.lanterns.forEach((l) => this.day.addLantern(l));
+    const house = this.builder.propImages.get("farmhouse");
+    if (house) for (const dx of [35, 109]) this.day.addGlow(house.x + dx, house.y - 34, 1.2, 0.7);
 
     // Everything an activity module needs, without exposing all of World.
     const ctx: WorldContext = {
@@ -92,6 +106,7 @@ export class World extends Scene {
       zoom: () => this.zoom,
       controller: () => this.controller,
       propImage: (id) => this.builder.propImages.get(id),
+      addGlow: (x, y, scale) => { this.day.addGlow(x, y, scale); },
     };
     this.hayride = new HayrideView(ctx);
     this.race = new RaceView(ctx);
@@ -103,10 +118,15 @@ export class World extends Scene {
     this.scarecrow = new ScarecrowView(ctx);
     this.mazeView = new MazeView(ctx);
     new MinigameView(ctx);
+    new ShopView(ctx);
+    this.farmer = new FarmerView(ctx);
+    this.crow = new CrowView(ctx);
     new SignView(ctx); // last: generic "read the sign" for signs nothing else uses
 
     this.scene.launch("Hud");
     this.applyZoom();
+    // A few leaves drifting across the patch (screen space, cheap).
+    this.leaves = new Leaves(this, 10, this.zoom, 999_998);
     this.scale.on("resize", this.onResize, this);
     this.events.once("shutdown", () => this.scale.off("resize", this.onResize, this));
 
@@ -227,7 +247,11 @@ export class World extends Scene {
     return null;
   }
 
-  update(_time: number, delta: number) {
+  update(time: number, delta: number) {
+    this.day.update(time);
+    this.leaves?.update(delta);
+    this.farmer.update();
+    this.crow.update(time);
     this.hayride.update();
     this.race.update();
     this.bench.update();
@@ -242,7 +266,8 @@ export class World extends Scene {
     const now = performance.now();
     for (const remote of this.remotes.values()) {
       const { state, character } = remote;
-      character.setCarrying(state.carrying);
+      character.setCarrying(state.carrying, state.pumpkinColor);
+      character.setHat(state.hat);
       const placed = this.placedPosition(state, character);
       if (placed) {
         character.setPosition(placed.x, placed.y);
@@ -263,7 +288,8 @@ export class World extends Scene {
 
   private updateMe(delta: number) {
     const me = this.me!, ctl = this.controller!, state = this.myState!;
-    me.setCarrying(state.carrying);
+    me.setCarrying(state.carrying, state.pumpkinColor);
+    me.setHat(state.hat);
     // Big pumpkins are heavy.
     ctl.stepMultiplier = state.carrying === "big" ? RACE.bigSlowdown : 1;
 

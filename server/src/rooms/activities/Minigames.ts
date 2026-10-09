@@ -176,6 +176,7 @@ export class Minigames {
     const best = Math.max(...entries.map(([, s]) => s));
     const leaders = entries.filter(([, s]) => s === best);
     this.mg.winner = leaders.length === 1 ? leaders[0][0] : "tie";
+    this.room.farmer.progress("minigame");
     const ids = [...this.mg.players];
     if (ids.length > 1) {
       this.room.awardTickets(ids, TICKETS.played);

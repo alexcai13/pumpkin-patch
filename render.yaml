@@ -1,0 +1,19 @@
+# Render "Blueprint" for the game server.
+# In Render: New → Blueprint → pick this repo. It reads this file.
+# (Or create a Web Service by hand with the same settings — see DEPLOY.md.)
+services:
+  - type: web
+    name: pumpkin-patch-server
+    runtime: node
+    # The server imports ../shared, so Render checks out the whole repo and
+    # runs commands from the server folder.
+    rootDir: server
+    buildCommand: npm install
+    startCommand: npm run start:prod
+    healthCheckPath: /health
+    plan: free
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: "22"

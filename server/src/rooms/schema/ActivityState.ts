@@ -38,6 +38,8 @@ export const CarvingState = schema({
   mask: t.string(),
   /** Index into PATCH_MAP.porchSpots. */
   spot: t.uint8(),
+  /** The carver's pumpkin color from the prize stand ("orange", "white", ...). */
+  pumpkinColor: t.string().default("orange"),
 });
 export type CarvingState = SchemaType<typeof CarvingState>;
 
@@ -151,3 +153,25 @@ export const MinigameState = schema({
   generations: t.map("string"),
 });
 export type MinigameState = SchemaType<typeof MinigameState>;
+
+/** The farmer's current task (shared by both players, see shared/tasks.ts). */
+export const FarmerState = schema({
+  taskId: t.string().default(""),
+  progress: t.uint8(),
+  goal: t.uint8(),
+  /** How many tasks have been finished this session. */
+  completed: t.uint16(),
+});
+export type FarmerState = SchemaType<typeof FarmerState>;
+
+/** The pumpkin-stealing crow. */
+export const CrowState = schema({
+  /** "gone" → "flyingIn" → "fleeing" (has a pumpkin!) → "leaving" → "gone" */
+  phase: t.string().default("gone"),
+  x: t.float32(),
+  y: t.float32(),
+  facingLeft: t.boolean(),
+  /** Carrying a stolen pumpkin? */
+  carrying: t.boolean(),
+});
+export type CrowState = SchemaType<typeof CrowState>;

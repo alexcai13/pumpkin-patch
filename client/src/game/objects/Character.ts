@@ -3,6 +3,7 @@ import { Dir, EMOTES } from "../../../../shared/constants";
 import { DIR_FRAMES } from "../art/characters";
 import { playerTextureKey } from "../art/ArtLoader";
 import { FONT } from "../ui/fonts";
+import { Sound } from "../audio/Sound";
 
 /** Depth for things that always draw above the world (name tags, emotes). */
 export const OVERLAY_DEPTH = 1_000_000;
@@ -28,6 +29,9 @@ export class Character {
 
   private carryImage?: Phaser.GameObjects.Image;
   private carrying = "";
+  private carryId = ":";
+  private hatImage?: Phaser.GameObjects.Image;
+  private hatId = "";
   private emote?: Phaser.GameObjects.Image;
   private sitting = false;
   /** When set, overrides Y-sorting (riders draw just above the wagon). */
@@ -98,19 +102,37 @@ export class Character {
     this.syncDisplay();
   }
 
-  /** Hold a pumpkin over your head ("" = empty hands). */
-  setCarrying(kind: string) {
-    if (kind === this.carrying) return;
+  /**
+   * Hold something over your head ("" = empty hands). Pumpkins use your
+   * pumpkin color from the prize stand.
+   */
+  setCarrying(kind: string, pumpkinColor = "orange") {
+    const id = `${kind}:${pumpkinColor}`;
+    if (id === this.carryId) return;
     const picked = !this.carrying && !!kind;
+    const dropped = !!this.carrying && !kind;
     this.carrying = kind;
+    this.carryId = id;
     this.carryImage?.destroy();
     this.carryImage = undefined;
     if (kind) {
-      // "small"/"big" = race pumpkins; anything else is a scarecrow part.
-      const key = kind === "big" ? "pumpkin_big" : kind === "small" ? "pumpkin" : `part_${kind}`;
+      // "small"/"big" = pumpkins; anything else is a scarecrow part.
+      const key = kind === "big" ? `pumpkin_big_${pumpkinColor}` : kind === "small" ? `pumpkin_${pumpkinColor}` : `part_${kind}`;
       this.carryImage = this.scene.add.image(this.x, this.y, key).setOrigin(0.5, 1);
     }
-    if (picked) this.squash();
+    if (picked) { this.squash(); Sound.play("pickup"); }
+    else if (dropped) Sound.play("drop");
+    this.syncDisplay();
+  }
+
+  /** Wear a prize-stand hat ("" = no hat). */
+  setHat(id: string) {
+    if (id === this.hatId) return;
+    this.hatId = id;
+    this.hatImage?.destroy();
+    this.hatImage = id && this.scene.textures.exists(`hat_${id}`)
+      ? this.scene.add.image(this.x, this.y, `hat_${id}`).setOrigin(0.5, 1)
+      : undefined;
     this.syncDisplay();
   }
 
@@ -127,6 +149,7 @@ export class Character {
     this.emote?.destroy();
     const bubble = this.scene.add.image(this.x, this.y, `emote_${name}`).setOrigin(0.5, 1).setDepth(OVERLAY_DEPTH + 1).setScale(0);
     this.emote = bubble;
+    Sound.play("pop");
     this.syncDisplay();
     this.scene.tweens.add({ targets: bubble, scale: 1, duration: 220, ease: "Back.easeOut" });
     this.scene.tweens.add({
@@ -136,13 +159,13 @@ export class Character {
   }
 
   setAlpha(alpha: number) {
-    for (const obj of [this.sprite, this.shadow, this.nameTag, this.carryImage]) obj?.setAlpha(alpha);
+    for (const obj of [this.sprite, this.shadow, this.nameTag, this.carryImage, this.hatImage]) obj?.setAlpha(alpha);
   }
 
   /** Fade everything out, then remove it. */
   fadeOutAndDestroy(onDone?: () => void) {
     this.scene.tweens.add({
-      targets: [this.sprite, this.shadow, this.nameTag, this.carryImage].filter(Boolean),
+      targets: [this.sprite, this.shadow, this.nameTag, this.carryImage, this.hatImage].filter(Boolean),
       alpha: 0,
       duration: 900,
       onComplete: () => { this.destroy(); onDone?.(); },
@@ -150,12 +173,12 @@ export class Character {
   }
 
   destroy() {
-    for (const obj of [this.sprite, this.shadow, this.nameTag, this.carryImage, this.emote]) obj?.destroy();
+    for (const obj of [this.sprite, this.shadow, this.nameTag, this.carryImage, this.emote, this.hatImage]) obj?.destroy();
   }
 
   /** Where the top of the head (plus anything held) is, for stacking labels. */
   get headTop() {
-    let top = Math.round(this.y) - 14 - (this.sitting ? 3 : 0);
+    let top = Math.round(this.y) - 14 - (this.sitting ? 3 : 0) - (this.hatImage ? 6 : 0);
     if (this.carryImage) top -= this.carryImage.height - 2;
     return top;
   }
@@ -171,8 +194,10 @@ export class Character {
     const depth = this.depthOverride ?? this.y;
     this.sprite.setDepth(depth);
 
+    // The hat sits on the head; walk-cycle bob is small enough to ignore.
+    this.hatImage?.setPosition(x, y - 9 - lift).setDepth(depth + 0.005);
     if (this.carryImage) {
-      this.carryImage.setPosition(x, y - 12 - lift).setDepth(depth + 0.01);
+      this.carryImage.setPosition(x, y - 12 - lift - (this.hatImage ? 5 : 0)).setDepth(depth + 0.01);
     }
     const top = this.headTop;
     this.nameTag.setPosition(x, top - 1);

@@ -50,5 +50,10 @@ export const PlayerState = schema({
   tickets: t.uint16().default(0),
   /** Waiting at the corn maze entrance for the other player. */
   mazeReady: t.boolean().default(false),
+
+  /** Prize stand: equipped hat id ("" = none), pumpkin color, and what they own (comma list). */
+  hat: t.string().default(""),
+  pumpkinColor: t.string().default("orange"),
+  owned: t.string().default(""),
 });
 export type PlayerState = SchemaType<typeof PlayerState>;

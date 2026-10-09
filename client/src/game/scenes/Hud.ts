@@ -2,6 +2,8 @@ import { Scene, GameObjects } from "phaser";
 import { MAX_PLAYERS } from "../../../../shared/constants";
 import { Network } from "../net/Network";
 import { FONT } from "../ui/fonts";
+import { Sound } from "../audio/Sound";
+import { FARMER_TASKS } from "../../../../shared/tasks";
 
 /** Events other scenes send to the HUD (via this.game.events). */
 export const HudEvents = {
@@ -21,6 +23,8 @@ export class Hud extends Scene {
   private overlay?: GameObjects.Container;
   private lastCount = -1;
   private ticketText!: GameObjects.Text;
+  private taskText!: GameObjects.Text;
+  private muteButton!: GameObjects.Text;
   private lastTickets = -1;
 
   constructor() {
@@ -31,6 +35,14 @@ export class Hud extends Scene {
     const code = Network.room?.roomId ?? "?????";
     this.add.text(12, 10, `Room code: ${code}`, textStyle(18, "#ffe08a"));
     this.ticketText = this.add.text(12, 56, "", textStyle(15, "#f4d77a"));
+    this.taskText = this.add.text(12, 78, "", textStyle(13, "#f1e3c2"));
+    // Mute button (bottom-right) — M works too. The choice is remembered.
+    this.muteButton = this.add.text(this.scale.width - 12, this.scale.height - 12, "", textStyle(16, "#f1e3c2"))
+      .setOrigin(1, 1).setPadding(6, 4, 6, 4).setBackgroundColor("#2a1a14cc")
+      .setInteractive({ useHandCursor: true })
+      .on("pointerdown", () => { Sound.unlock(); Sound.toggleMute(); this.refreshMute(); });
+    this.input.keyboard!.on("keydown-M", () => { Sound.toggleMute(); this.refreshMute(); });
+    this.refreshMute();
     this.waitText = this.add.text(12, 34, "", textStyle(14, "#f1e3c2"));
     this.add.text(12, this.scale.height - 26, "Move: Arrows / WASD    Run: Shift    Use: E / Space    Emotes: 1-4", textStyle(13, "#f1e3c2"))
       .setAlpha(0.8)
@@ -51,6 +63,7 @@ export class Hud extends Scene {
   private layout() {
     const help = this.children.getByName("help") as GameObjects.Text | null;
     help?.setY(this.scale.height - 26);
+    this.muteButton?.setPosition(this.scale.width - 12, this.scale.height - 12);
     this.overlay?.setPosition(this.scale.width / 2, this.scale.height / 2);
   }
 
@@ -66,6 +79,11 @@ export class Hud extends Scene {
       this.lastCount = count;
       this.setPlayers(count);
     }
+    // Farmer's current task, so you don't have to walk back to check.
+    const farmer = Network.room?.state.farmer;
+    const task = FARMER_TASKS.find((t) => t.id === farmer?.taskId);
+    this.taskText.setText(task && farmer ? `📋 Farmer: ${shortTask(task.id)}${task.goal > 1 ? ` (${farmer.progress}/${farmer.goal})` : ""}` : "");
+
     // Ticket counter (pops when it goes up).
     const room = Network.room;
     const tickets = room?.state.players.get(room.sessionId)?.tickets ?? 0;
@@ -74,13 +92,19 @@ export class Hud extends Scene {
       this.lastTickets = tickets;
       this.ticketText.setText(`🎟 ${tickets} tickets`);
       if (gained) {
+        Sound.play("ticket");
         this.ticketText.setScale(1.4);
         this.tweens.add({ targets: this.ticketText, scale: 1, duration: 400, ease: "Back.easeOut" });
       }
     }
   }
 
+  private refreshMute() {
+    this.muteButton.setText(Sound.muted ? "🔇 Sound off (M)" : "🔊 Sound on (M)");
+  }
+
   private toast(message: string) {
+    Sound.play("toast");
     const t = this.add.text(this.scale.width / 2, 14, message, textStyle(16, "#fff4d6"))
       .setOrigin(0.5, 0)
       .setPadding(10, 6, 10, 6)
@@ -120,4 +144,13 @@ export class Hud extends Scene {
 
 function textStyle(size: number, color: string) {
   return { fontFamily: FONT, fontSize: `${size}px`, color, stroke: "#2a1a14", strokeThickness: 4 };
+}
+
+/** A short version of each farmer task for the HUD. */
+function shortTask(id: string) {
+  const short: Record<string, string> = {
+    pumpkins: "bring 5 pumpkins", hayride: "take a hayride", carve: "carve a jack-o'-lantern",
+    minigame: "play a minigame", cider: "sit at the cider stand", crow: "chase off the crow", photo: "take a photo strip",
+  };
+  return short[id] ?? id;
 }

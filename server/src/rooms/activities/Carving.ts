@@ -41,6 +41,8 @@ export class Carving {
     }
     carvings.push(new CarvingState({
       id: `c${this.nextId++}`, owner: player.name, color: player.color, mask: msg.mask, spot,
+      pumpkinColor: player.pumpkinColor,
     }));
+    this.room.farmer.progress("carve");
   }
 }

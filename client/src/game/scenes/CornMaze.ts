@@ -13,6 +13,7 @@ import { WorldBuilder } from "../world/WorldBuilder";
 import { makeCanvas } from "../art/pixels";
 import { FONT } from "../ui/fonts";
 import { P } from "../art/palette";
+import { Sound } from "../audio/Sound";
 
 interface MazeData { onExit?: () => void }
 
@@ -89,6 +90,7 @@ export class CornMaze extends Phaser.Scene {
     const mine = this.m.players.get(this.myId);
     const myState = room.state.players.get(this.myId)!;
     this.me = new Character(this, mine?.x ?? 0, mine?.y ?? 0, myState.color, myState.name, true);
+    this.me.setHat(myState.hat);
     this.me.setTextResolution(zoom);
     this.controller = new PlayerController(this, this.me, this.collision);
     this.controller.teleportToTile(Math.floor((mine?.x ?? 0) / TILE), Math.floor((mine?.y ?? 0) / TILE));
@@ -100,6 +102,7 @@ export class CornMaze extends Phaser.Scene {
       if (id === this.myId) continue;
       const ps = room.state.players.get(id);
       const character = new Character(this, mp.x, mp.y, ps?.color ?? 0, ps?.name ?? "Friend", false);
+      character.setHat(ps?.hat ?? "");
       character.setTextResolution(zoom);
       const interp = new Interpolator(mp.x, mp.y);
       this.friend = { id, character, interp, state: mp, lastX: mp.x, lastY: mp.y };
@@ -231,6 +234,7 @@ export class CornMaze extends Phaser.Scene {
   }
 
   private showDone() {
+    Sound.play("win");
     const m = this.m;
     const best = m.bestMs === m.finishMs ? "New best time! 🎉" : `Best: ${formatTime(m.bestMs)}`;
     const w = this.scale.width, h = this.scale.height;

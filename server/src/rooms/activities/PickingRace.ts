@@ -85,8 +85,13 @@ export class PickingRace {
     this.setPhase("results", RACE.resultsSeconds);
   }
 
+  /**
+   * Pick a field pumpkin. During a race it goes in your basket; outside a
+   * race you can still pick one (e.g. for the farmer) and it regrows later.
+   */
   private pick(client: Client, msg: PickMessage) {
-    if (this.race.phase !== "running") return;
+    const racing = this.race.phase === "running";
+    if (!racing && this.race.phase !== "idle") return;
     const player = this.room.state.players.get(client.sessionId);
     const pumpkin = this.room.state.pumpkins.get(String(msg?.id));
     if (!player || !pumpkin || pumpkin.picked || player.carrying) return;
@@ -94,6 +99,11 @@ export class PickingRace {
 
     pumpkin.picked = true; // hidden for both players right away
     player.carrying = pumpkin.big ? "big" : "small";
+    if (!racing) {
+      this.room.clock.setTimeout(() => {
+        if (this.race.phase === "idle" && this.room.state.pumpkins.get(pumpkin.id) === pumpkin) pumpkin.picked = false;
+      }, 25_000);
+    }
   }
 
   private deliver(client: Client) {

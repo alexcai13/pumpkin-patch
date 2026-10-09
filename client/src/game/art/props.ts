@@ -49,12 +49,23 @@ function awning(ctx: Ctx, x: number, y: number, w: number, h: number, a: string,
   rect(ctx, x, y + h + 2, w, 1, "rgba(0,0,0,0.25)");
 }
 
-function pumpkinShape(ctx: Ctx, cx: number, cy: number, rx: number, ry: number) {
+/** Colors for one pumpkin variety (the prize stand sells other colors). */
+export interface PumpkinPalette { main: string; dark: string; light: string }
+export const PUMPKIN_PALETTES: Record<string, PumpkinPalette> = {
+  orange: { main: P.orange, dark: P.orangeDark, light: P.orangeLight },
+  white: { main: "#efe6d8", dark: "#c2b49c", light: "#ffffff" },
+  green: { main: "#7a9a3c", dark: "#557530", light: "#a8c862" },
+  blue: { main: "#5a86a8", dark: "#3a5f7c", light: "#8ab4cf" },
+  purple: { main: "#8a4f8f", dark: "#5f3366", light: "#b47ab9" },
+  gold: { main: "#e8c040", dark: "#a8851f", light: "#fff2a8" },
+};
+
+function pumpkinShape(ctx: Ctx, cx: number, cy: number, rx: number, ry: number, pal: PumpkinPalette = PUMPKIN_PALETTES.orange) {
   ellipse(ctx, cx, cy, rx + 1, ry + 1, P.outline);
-  ellipse(ctx, cx, cy, rx, ry, P.orange);
+  ellipse(ctx, cx, cy, rx, ry, pal.main);
   // Ribs
-  for (const dx of [-rx * 0.5, 0, rx * 0.5]) rect(ctx, cx + dx, cy - ry + 1, 1, ry * 2 - 1, P.orangeDark);
-  ellipse(ctx, cx - rx * 0.45, cy - ry * 0.35, rx * 0.25, ry * 0.25, P.orangeLight);
+  for (const dx of [-rx * 0.5, 0, rx * 0.5]) rect(ctx, cx + dx, cy - ry + 1, 1, ry * 2 - 1, pal.dark);
+  ellipse(ctx, cx - rx * 0.45, cy - ry * 0.35, rx * 0.25, ry * 0.25, pal.light);
   rect(ctx, cx - 1, cy - ry - 2, 2, 3, P.stem);
   px(ctx, cx + 1, cy - ry - 2, P.leafGreenDark);
 }
@@ -119,10 +130,10 @@ export function drawHay() {
   return canvas;
 }
 
-export function drawPumpkin() {
+export function drawPumpkin(pal?: PumpkinPalette) {
   const { canvas, ctx } = makeCanvas(16, 16);
   ctx.globalAlpha = 0.3; ellipse(ctx, 8, 14, 7, 2, P.black); ctx.globalAlpha = 1;
-  pumpkinShape(ctx, 8, 10, 6.5, 4.5);
+  pumpkinShape(ctx, 8, 10, 6.5, 4.5, pal);
   return canvas;
 }
 
@@ -405,6 +416,28 @@ function drawBasket() {
   return canvas;
 }
 
+/** Farmer Hollis: straw hat, white beard, overalls (16x24). */
+function drawFarmer() {
+  const { canvas, ctx } = makeCanvas(16, 24);
+  ctx.globalAlpha = 0.3; ellipse(ctx, 8, 22, 6, 2, P.black); ctx.globalAlpha = 1;
+  // Legs + boots
+  rect(ctx, 4, 17, 3, 5, "#3e4f73"); rect(ctx, 9, 17, 3, 5, "#3e4f73");
+  rect(ctx, 3, 21, 4, 2, P.woodDeep); rect(ctx, 9, 21, 4, 2, P.woodDeep);
+  // Shirt + overalls
+  outlineRect(ctx, 2, 10, 12, 9, P.red);
+  rect(ctx, 4, 12, 8, 7, "#4f66a0"); rect(ctx, 4, 10, 2, 3, "#4f66a0"); rect(ctx, 10, 10, 2, 3, "#4f66a0");
+  px(ctx, 5, 13, P.gold); px(ctx, 10, 13, P.gold);
+  rect(ctx, 1, 12, 2, 4, "#f4c99b"); rect(ctx, 13, 12, 2, 4, "#f4c99b");
+  // Head, beard
+  ellipse(ctx, 8, 7, 4.5, 4.5, P.outline); ellipse(ctx, 8, 7, 3.6, 3.6, "#f4c99b");
+  px(ctx, 6, 6, P.outline); px(ctx, 10, 6, P.outline);
+  ellipse(ctx, 8, 9.5, 3.5, 2.5, P.cream); px(ctx, 8, 8, "#d49a6c");
+  // Straw hat
+  ellipse(ctx, 8, 3.5, 7.5, 2, P.outline); ellipse(ctx, 8, 3.5, 6.5, 1.4, P.hay);
+  outlineRect(ctx, 4, 0, 8, 4, P.hayDark); rect(ctx, 5, 2, 6, 1, P.red);
+  return canvas;
+}
+
 export interface PropArt {
   draw: () => HTMLCanvasElement;
   /**
@@ -429,6 +462,7 @@ export const PROP_ART: Record<PropType, PropArt> = {
   appleBarrel: { draw: drawAppleBarrel },
   tossFlag: { draw: drawTossFlag },
   basket: { draw: drawBasket },
+  farmer: { draw: drawFarmer },
   prizeStand: { draw: drawPrizeStand },
   photoBooth: { draw: drawPhotoBooth, depthRow: 0 },
 };
@@ -450,10 +484,10 @@ export function drawLeaf(variant: number) {
 }
 
 /** Big field pumpkin (worth 3 points, slows you down). 22x18. */
-export function drawBigPumpkin() {
+export function drawBigPumpkin(pal?: PumpkinPalette) {
   const { canvas, ctx } = makeCanvas(22, 18);
   ctx.globalAlpha = 0.3; ellipse(ctx, 11, 16, 10, 2, P.black); ctx.globalAlpha = 1;
-  pumpkinShape(ctx, 11, 11, 9.5, 5.5);
+  pumpkinShape(ctx, 11, 11, 9.5, 5.5, pal);
   return canvas;
 }
 
@@ -504,9 +538,9 @@ export function drawVignette() {
  * shrunk 2x onto the pumpkin's face; a carved spot shows if any of the 4 grid
  * pixels it covers was carved.
  */
-export function drawCarvedPumpkin(pixels: Uint8Array, gridW: number, gridH: number) {
+export function drawCarvedPumpkin(pixels: Uint8Array, gridW: number, gridH: number, pal?: PumpkinPalette) {
   const { canvas, ctx } = makeCanvas(20, 16);
-  pumpkinShape(ctx, 10, 9.5, 9, 5.5);
+  pumpkinShape(ctx, 10, 9.5, 9, 5.5, pal);
   for (let y = 0; y < gridH / 2; y++) {
     for (let x = 0; x < gridW / 2; x++) {
       const i = y * 2 * gridW + x * 2;
@@ -620,5 +654,22 @@ export function drawApple() {
   px(ctx, 3, 4, P.cream); px(ctx, 2, 5, P.white);
   rect(ctx, 4, 0, 1, 3, P.woodDark);
   rect(ctx, 5, 1, 2, 1, P.leafGreen);
+  return canvas;
+}
+
+/** The crow: 2 frames (wings up / down), 16x12 each, side by side. */
+export function drawCrow() {
+  const { canvas, ctx } = makeCanvas(32, 12);
+  for (let f = 0; f < 2; f++) {
+    const o = f * 16;
+    ellipse(ctx, o + 8, 7, 5, 3.5, P.outline); ellipse(ctx, o + 8, 7, 4, 2.6, "#2b2440");   // body
+    ellipse(ctx, o + 3.5, 5, 2.6, 2.4, P.outline); ellipse(ctx, o + 3.5, 5, 1.8, 1.7, "#2b2440"); // head
+    px(ctx, o + 3, 4, P.goldLight);                                      // eye
+    rect(ctx, o, 5, 2, 1, P.gold);                                       // beak
+    rect(ctx, o + 12, 6, 3, 2, "#1d1830");                               // tail
+    if (f === 0) { for (let i = 0; i < 4; i++) rect(ctx, o + 6 + i, 1 + i, 2, 1, "#3d3460"); } // wing up
+    else { for (let i = 0; i < 4; i++) rect(ctx, o + 6 + i, 9 - i + 2, 2, 1, "#3d3460"); }    // wing down
+    rect(ctx, o + 7, 10, 1, 2, P.gold); rect(ctx, o + 9, 10, 1, 2, P.gold); // feet
+  }
   return canvas;
 }

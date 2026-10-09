@@ -4,6 +4,7 @@ import { TOSS, tossPosition, tossFlightTime, type TossThrow } from "../../../../
 import { Network } from "../net/Network";
 import { MinigameScene, textStyle } from "./MinigameScene";
 import { P } from "../art/palette";
+import { Sound } from "../audio/Sound";
 
 interface ThrowMessage { by: string; game: string; input: TossThrow; result: { meters: number }; round: number }
 
@@ -130,6 +131,7 @@ export class HayToss extends MinigameScene {
     this.needle.clear();
     this.powerBar.clear();
     const flight = tossFlightTime(msg.input);
+    Sound.play("whoosh");
     const realMs = Math.min(2600, Math.max(900, flight * 600)); // sped up so it's snappy
     const state = { t: 0 };
     this.tweens.add({

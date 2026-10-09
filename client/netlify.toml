@@ -1,0 +1,7 @@
+# Netlify: set the site's "Base directory" to `client` (this file's folder).
+[build]
+  command = "npm run build-nolog"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "22"

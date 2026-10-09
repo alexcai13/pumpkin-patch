@@ -94,6 +94,7 @@ export class PhotoBooth {
     this.timer = this.room.clock.setTimeout(() => {
       if (b.shot >= BOOTH.shots) {
         b.phase = "done";
+        this.room.farmer.progress("photo");
         return;
       }
       b.shot++;

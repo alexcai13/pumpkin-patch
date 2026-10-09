@@ -82,6 +82,8 @@ export const PATCH_MAP: MapDef = {
     { id: "carve1", type: "carvingTable", x: 4, y: 9, w: 2, h: 1, solid: "all" },
     { id: "carve2", type: "carvingTable", x: 9, y: 9, w: 2, h: 1, solid: "all" },
     { id: "signPorch", type: "sign", x: 6, y: 11, w: 1, h: 1, solid: "all", label: "Carving Porch" },
+    // The farmer who hands out tasks (art: client art/props.ts drawFarmer).
+    { id: "farmer", type: "farmer", x: 14, y: 10, w: 1, h: 1, solid: "all", label: "Farmer Hollis" },
 
     // --- North: cider stand + benches ---
     { id: "cider", type: "ciderStand", x: 17, y: 3, w: 4, h: 3, solid: "all" },

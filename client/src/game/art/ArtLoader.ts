@@ -5,11 +5,12 @@ import { drawTileset } from "./tiles";
 import {
   drawTree, drawCorn, drawHay, drawPumpkin, drawLantern, drawFence, drawLeaf,
   drawWagon, drawBigPumpkin, drawEmote, drawGlow, drawVignette,
-  drawGiantPumpkin, drawPart, drawSparkle, drawBowlingPin, drawBowlingBall, drawApple,
+  drawGiantPumpkin, drawPart, drawSparkle, drawBowlingPin, drawBowlingBall, drawApple, drawCrow,
   PROP_ART, TREE_VARIANTS, LEAF_COLORS,
 } from "./props";
 import type { PropType } from "../../../../shared/map/legend";
 import { EMOTES } from "../../../../shared/constants";
+import { ensureCosmeticTextures } from "./cosmetics";
 
 /**
  * ART REGISTRY
@@ -64,6 +65,7 @@ export const ART: ArtEntry[] = [
   { key: "bowling_pin", draw: drawBowlingPin },
   { key: "bowling_ball", draw: drawBowlingBall },
   { key: "apple", draw: drawApple },
+  { key: "crow", draw: drawCrow, frame: { w: 16, h: 12, count: 2 } },
   { key: "vignette", draw: drawVignette },
   ...(Object.keys(PROP_ART) as PropType[]).map((type) => ({ key: propTextureKey(type), draw: PROP_ART[type].draw })),
 ];
@@ -87,6 +89,7 @@ export function queueManifestOverrides(scene: Phaser.Scene) {
 
 /** Draws every registered texture that wasn't loaded from a file. */
 export function generateMissingTextures(scene: Phaser.Scene) {
+  ensureCosmeticTextures(scene);
   for (const entry of ART) {
     if (scene.textures.exists(entry.key)) continue;
     const canvas = entry.draw();

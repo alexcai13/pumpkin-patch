@@ -23,6 +23,8 @@ export class WorldBuilder {
   readonly labels: Phaser.GameObjects.Text[] = [];
   /** Prop images by prop id, so later phases can animate them (the wagon!). */
   readonly propImages = new Map<string, Phaser.GameObjects.Image>();
+  /** Jack-o'-lantern images (DayCycle lights them up at dusk). */
+  readonly lanterns: Phaser.GameObjects.Image[] = [];
 
   constructor(private scene: Phaser.Scene, private map: MapDef) {
     this.widthPx = map.rows[0].length * TILE;
@@ -75,11 +77,12 @@ export class WorldBuilder {
         if (!info.object) continue;
         const key = objectTextureKey(info.object, tx, ty, hash2(tx * 7, ty * 3));
         // Bottom-center of the sprite sits at the bottom-center of its tile.
-        this.scene.add.image(tx * TILE + TILE / 2, (ty + 1) * TILE, key)
+        const img = this.scene.add.image(tx * TILE + TILE / 2, (ty + 1) * TILE, key)
           .setOrigin(0.5, 1)
           // Y-sort: a hair less than a character standing on the same row,
           // so the character beside it draws in front.
           .setDepth(ty * TILE + TILE / 2 - 0.1);
+        if (info.object === "lantern") this.lanterns.push(img);
       }
     });
   }

@@ -4,6 +4,7 @@ import { LANE, PINS, MAX_AIM, type BowlingResult, type BowlingThrow } from "../.
 import { Network } from "../net/Network";
 import { MinigameScene, textStyle } from "./MinigameScene";
 import { P } from "../art/palette";
+import { Sound } from "../audio/Sound";
 
 interface ThrowMessage { by: string; game: string; input: BowlingThrow; result: BowlingResult & { seed: number }; round: number }
 
@@ -140,6 +141,8 @@ export class Bowling extends MinigameScene {
     this.resetPins();
     const r = msg.result;
     const duration = 1100 + (1 - msg.input.power) * 700;
+    Sound.play("roll");
+    if (r.knocked.length) this.time.delayedCall(duration * 0.75, () => Sound.play("pins"));
     this.tweens.add({
       targets: this.ball, x: this.sx(r.endX), y: this.sy(r.endY), angle: 720, duration, ease: "Quad.easeOut",
       onComplete: () => { if (r.gutter) this.tweens.add({ targets: this.ball, alpha: 0, duration: 300 }); },

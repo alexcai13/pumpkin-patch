@@ -10,6 +10,7 @@ import {
 } from "../art/boothArt";
 import { playerTextureKey } from "../art/ArtLoader";
 import { CHAR_W, CHAR_H } from "../art/characters";
+import { Sound } from "../audio/Sound";
 
 interface BoothData { onClose?: () => void }
 
@@ -242,7 +243,7 @@ export class PhotoBooth extends Phaser.Scene {
       this.countEl.textContent = count > 0 ? String(count) : "";
       this.countEl.classList.remove("pop");
       void this.countEl.offsetWidth; // restart the CSS animation
-      if (count > 0) this.countEl.classList.add("pop");
+      if (count > 0) { this.countEl.classList.add("pop"); Sound.play("beep"); }
     }
   }
 
@@ -309,6 +310,7 @@ export class PhotoBooth extends Phaser.Scene {
     this.frames[shot - 1] = frame;
 
     // Camera flash!
+    Sound.play("shutter");
     this.flashEl.classList.remove("flash");
     void this.flashEl.offsetWidth;
     this.flashEl.classList.add("flash");

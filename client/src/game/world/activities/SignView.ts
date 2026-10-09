@@ -15,7 +15,7 @@ const SIGN_TEXT: Record<string, string> = {
   signHayride: "Hayride — stand next to the wagon and press E to board. It leaves when everyone's on.",
   signStopFarm: "Hayride stop — the wagon pauses here. Hop on or off!",
   signStopMaze: "Hayride stop — the wagon pauses here. Hop on or off!",
-  signPrizes: "Tickets & Prizes — opening soon!",
+  signPrizes: "Tickets & Prizes — trade your tickets for hats and pumpkin colors!",
   signPhoto: "Photo Booth — step inside the frame and press E. Both of you on camera, 3 photos, one strip!",
 };
 

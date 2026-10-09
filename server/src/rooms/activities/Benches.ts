@@ -42,6 +42,7 @@ export class Benches {
     player.y = bench.y * TILE + TILE / 2;
     player.dir = Dir.Down;
     player.moving = false;
+    this.room.farmer.progress("cider");
   }
 
   private stand(client: Client) {

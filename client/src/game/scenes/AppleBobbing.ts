@@ -4,6 +4,7 @@ import { APPLES, applePosition } from "../../../../shared/minigames";
 import { Network } from "../net/Network";
 import { MinigameScene, textStyle } from "./MinigameScene";
 import { P } from "../art/palette";
+import { Sound } from "../audio/Sound";
 
 interface Barrel {
   id: string;
@@ -88,6 +89,7 @@ export class AppleBobbing extends MinigameScene {
   private onBite(m: { by: string; hit: boolean; slot?: number }) {
     const barrel = this.barrels.find((b) => b.id === m.by);
     if (!barrel) return;
+    if (m.by === this.myId) Sound.play(m.hit ? "pickup" : "splash");
     if (m.hit && m.slot !== undefined) {
       // The caught apple pops up out of the water.
       const apple = barrel.apples[m.slot];

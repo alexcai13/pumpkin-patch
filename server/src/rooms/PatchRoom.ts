@@ -19,6 +19,9 @@ import { GiantPumpkin } from "./activities/GiantPumpkin.js";
 import { Scarecrow } from "./activities/Scarecrow.js";
 import { CornMaze } from "./activities/CornMaze.js";
 import { Minigames } from "./activities/Minigames.js";
+import { PrizeStand } from "./activities/PrizeStand.js";
+import { Farmer } from "./activities/Farmer.js";
+import { Crow } from "./activities/Crow.js";
 
 /** Fastest legal speed in px/sec (running), plus 25% slack for timing jitter. */
 const MAX_SPEED = (TILE / (RUN_STEP_MS / 1000)) * 1.25;
@@ -67,6 +70,9 @@ export class PatchRoom extends Room<{ state: PatchState }> {
   private scarecrow!: Scarecrow;
   private maze!: CornMaze;
   private minigames!: Minigames;
+  private crow!: Crow;
+  /** Public so other activities can report farmer-task progress. */
+  farmer!: Farmer;
 
   messages = {
     /** A client reports where its own character is (≈15 times per second). */
@@ -107,6 +113,10 @@ export class PatchRoom extends Room<{ state: PatchState }> {
   };
 
   onCreate() {
+    // Clients ask "what time is it?" to line their clock up with ours (for the
+    // shared day/dusk cycle). They measure the round trip to correct for lag.
+    this.onMessage("clock:ping", (client: Client, msg: { sent: number }) => client.send("clock:pong", { sent: msg?.sent, now: Date.now() }));
+
     // The short code doubles as the Colyseus room id, so joinById(code) works.
     this.roomId = claimRoomCode();
     this.state.race = new RaceState();
@@ -123,9 +133,16 @@ export class PatchRoom extends Room<{ state: PatchState }> {
     this.scarecrow = new Scarecrow(this);
     this.maze = new CornMaze(this);
     this.minigames = new Minigames(this);
+    new PrizeStand(this);
+    this.farmer = new Farmer(this);
+    this.crow = new Crow(this, () => this.farmer.progress("crow"));
+    this.state.startedAt = Date.now();
 
-    // 20 updates per second for things that move on their own (the wagon).
-    this.setSimulationInterval((dt) => this.hayride.update(dt), 50);
+    // 20 updates per second for things that move on their own (wagon, crow).
+    this.setSimulationInterval((dt) => {
+      this.hayride.update(dt);
+      this.crow.update(dt);
+    }, 50);
     this.startEmptyTimer(); // in case the creator never actually arrives
     console.log(`room ${this.roomId} created`);
   }

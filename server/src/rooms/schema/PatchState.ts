@@ -2,7 +2,7 @@ import { schema, t, type SchemaType } from "@colyseus/schema";
 import { PlayerState } from "./PlayerState.js";
 import {
   PumpkinState, RaceState, CarvingState, HayrideState, BoothState,
-  GiantPumpkinState, ScarecrowState, MazeState, MinigameState,
+  GiantPumpkinState, ScarecrowState, MazeState, MinigameState, FarmerState, CrowState,
 } from "./ActivityState.js";
 
 /**
@@ -28,5 +28,11 @@ export const PatchState = schema({
   scarecrow: ScarecrowState,
   maze: MazeState,
   minigame: MinigameState,
+
+  farmer: FarmerState,
+  crow: CrowState,
+
+  /** Server clock (ms) when the room opened — drives the shared day/dusk cycle. */
+  startedAt: t.float64(),
 });
 export type PatchState = SchemaType<typeof PatchState>;

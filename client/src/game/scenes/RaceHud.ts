@@ -2,6 +2,7 @@ import { Scene, GameObjects } from "phaser";
 import { PLAYER_COLORS } from "../../../../shared/constants";
 import { Network } from "../net/Network";
 import { FONT } from "../ui/fonts";
+import { Sound } from "../audio/Sound";
 
 /**
  * PUMPKIN PICKING RACE — screen UI.
@@ -82,6 +83,7 @@ export class RaceHud extends Scene {
 
   private flashBig(text: string, fadeOut: boolean) {
     this.lastBig = text;
+    Sound.play(fadeOut ? "go" : "beep");
     this.tweens.killTweensOf(this.big);
     this.big.setText(text).setScale(1.6).setAlpha(1);
     this.tweens.add({ targets: this.big, scale: 1, duration: 300, ease: "Back.easeOut" });
@@ -89,6 +91,7 @@ export class RaceHud extends Scene {
   }
 
   private showResults() {
+    Sound.play("win");
     const room = Network.room!;
     const race = room.state.race;
     const players = [...room.state.players.entries()].sort(([, a], [, b]) => b.raceScore - a.raceScore);

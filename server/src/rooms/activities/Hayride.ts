@@ -155,6 +155,7 @@ export class Hayride {
     const h = this.h;
     if (this.target === DEF.route.length - 1) {
       // Back home: park. Riders can hop off now; if they stay aboard it goes again.
+      if (this.riders().length > 0) this.room.farmer.progress("hayride");
       h.phase = "parked";
       h.facingLeft = false;
       this.setHomeBlocked(true);
