@@ -1,0 +1,98 @@
+/* Page + title screen styles. In-game UI is drawn by Phaser (scenes/Hud.ts). */
+:root {
+  --ink: #2a1a14;
+  --cream: #f1e3c2;
+  --orange: #e8762b;
+  --orange-dark: #b4521c;
+  --gold: #ffe08a;
+  --wood: #6e4529;
+  --font: "Pixelify Sans", "Courier New", monospace;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: var(--ink);
+  color: var(--cream);
+  overflow: hidden;
+}
+
+#app, #game-container {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+/* Keep the canvas crisp when the browser scales it */
+canvas { image-rendering: pixelated; display: block; }
+
+/* ---------- Title panel ---------- */
+.pp-panel {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(380px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  box-sizing: border-box;
+  padding: 22px 24px 18px;
+  background: rgba(42, 26, 20, 0.9);
+  border: 4px solid var(--orange);
+  box-shadow: 0 0 0 4px var(--ink), 8px 8px 0 4px rgba(0,0,0,0.35);
+  font-family: var(--font);
+  text-align: center;
+}
+
+.pp-title { margin: 0; font-size: 34px; line-height: 1; color: var(--orange); text-shadow: 3px 3px 0 var(--ink); }
+.pp-title span { color: var(--gold); }
+.pp-sub { margin: 6px 0 16px; font-size: 15px; opacity: 0.85; }
+
+.pp-label { display: block; text-align: left; font-size: 15px; margin: 10px 0 6px; color: var(--gold); }
+
+.pp-input {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 6px;
+  padding: 8px 10px;
+  font: 18px var(--font);
+  color: var(--ink);
+  background: var(--cream);
+  border: 3px solid var(--ink);
+  outline: none;
+}
+.pp-input:focus { border-color: var(--orange); }
+
+.pp-colors { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
+.pp-swatch {
+  aspect-ratio: 4 / 5;
+  padding: 4px;
+  background: var(--swatch);
+  border: 3px solid var(--ink);
+  cursor: pointer;
+}
+.pp-swatch canvas { width: 100%; height: 100%; image-rendering: pixelated; }
+.pp-swatch.selected { border-color: var(--gold); box-shadow: 0 0 0 2px var(--gold); transform: translateY(-2px); }
+
+.pp-btn {
+  font: 700 18px var(--font);
+  padding: 9px 14px;
+  color: var(--cream);
+  background: var(--wood);
+  border: 3px solid var(--ink);
+  box-shadow: 0 4px 0 var(--ink);
+  cursor: pointer;
+}
+.pp-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
+.pp-btn:disabled { opacity: 0.55; cursor: wait; }
+.pp-primary { width: 100%; margin-top: 16px; background: var(--orange); color: var(--ink); }
+
+.pp-or { margin: 14px 0 8px; font-size: 14px; opacity: 0.75; }
+.pp-join { display: flex; gap: 8px; align-items: stretch; }
+.pp-join .pp-input { margin-top: 0; text-transform: uppercase; letter-spacing: 3px; }
+.pp-join .pp-btn { white-space: nowrap; }
+
+.pp-error { min-height: 20px; margin: 12px 0 0; font-size: 15px; color: #ff9a7a; }
+.pp-error.pp-info { color: var(--gold); }
