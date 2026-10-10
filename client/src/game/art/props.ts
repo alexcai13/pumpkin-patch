@@ -438,6 +438,22 @@ function drawFarmer() {
   return canvas;
 }
 
+/** The note board: a little corkboard on two posts with pinned papers (32x28). */
+function drawNoteBoard() {
+  const { canvas, ctx } = makeCanvas(32, 28);
+  outlineRect(ctx, 3, 14, 4, 14, P.woodDark); outlineRect(ctx, 25, 14, 4, 14, P.woodDark);
+  outlineRect(ctx, 0, 2, 32, 18, P.wood);
+  rect(ctx, 2, 4, 28, 14, "#b98a5a");                           // cork
+  for (let i = 0; i < 14; i++) px(ctx, 3 + ((i * 7) % 26), 5 + ((i * 5) % 12), "#9c6b3f");
+  // Pinned notes
+  outlineRect(ctx, 4, 6, 9, 9, P.cream); rect(ctx, 6, 9, 5, 1, P.creamDark); rect(ctx, 6, 11, 4, 1, P.creamDark); px(ctx, 8, 6, P.red);
+  outlineRect(ctx, 18, 5, 10, 8, "#f4d77a"); rect(ctx, 20, 8, 6, 1, P.goldDark); rect(ctx, 20, 10, 4, 1, P.goldDark); px(ctx, 23, 5, P.plum);
+  // A little heart
+  px(ctx, 15, 14, P.red); px(ctx, 17, 14, P.red); rect(ctx, 15, 15, 3, 1, P.red); px(ctx, 16, 16, P.red);
+  rect(ctx, 0, 0, 32, 3, P.woodDark);                           // roof plank
+  return canvas;
+}
+
 export interface PropArt {
   draw: () => HTMLCanvasElement;
   /**
@@ -463,6 +479,7 @@ export const PROP_ART: Record<PropType, PropArt> = {
   tossFlag: { draw: drawTossFlag },
   basket: { draw: drawBasket },
   farmer: { draw: drawFarmer },
+  noteBoard: { draw: drawNoteBoard },
   prizeStand: { draw: drawPrizeStand },
   photoBooth: { draw: drawPhotoBooth, depthRow: 0 },
 };

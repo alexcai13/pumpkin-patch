@@ -14,6 +14,7 @@ import { Bowling } from "./scenes/Bowling";
 import { AppleBobbing } from "./scenes/AppleBobbing";
 import { HayToss } from "./scenes/HayToss";
 import { PrizeShop } from "./scenes/PrizeShop";
+import { NoteBoard } from "./scenes/NoteBoard";
 
 //  Game config docs: https://docs.phaser.io/api-documentation/typedef/types-core#gameconfig
 const config: Phaser.Types.Core.GameConfig = {
@@ -31,7 +32,7 @@ const config: Phaser.Types.Core.GameConfig = {
   // Order matters for drawing: later scenes draw on top of earlier ones.
   scene: [
     Boot, Preloader, Title, World, CornMaze, CiderCozy, Hud, RaceHud,
-    Carving, CarvingViewer, PhotoBooth, Bowling, AppleBobbing, HayToss, PrizeShop,
+    Carving, CarvingViewer, PhotoBooth, Bowling, AppleBobbing, HayToss, PrizeShop, NoteBoard,
   ],
 };
 

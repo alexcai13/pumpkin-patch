@@ -175,3 +175,27 @@ export const CrowState = schema({
   carrying: t.boolean(),
 });
 export type CrowState = SchemaType<typeof CrowState>;
+
+/** One revealed note on the note board. */
+export const NoteEntry = schema({
+  /** Which round of notes it belongs to (both notes of a round are shown together). */
+  round: t.uint16(),
+  author: t.string(),
+  color: t.uint8(),
+  text: t.string(),
+});
+export type NoteEntry = SchemaType<typeof NoteEntry>;
+
+/**
+ * The note board. While writing, only WHO has submitted is synced (not what
+ * they wrote), so nobody can peek. Once everyone has written one, the notes
+ * are copied into `revealed` for both to read.
+ */
+export const NotesState = schema({
+  round: t.uint16().default(1),
+  /** sessionId → true once that player has submitted this round. */
+  submitted: t.map("boolean"),
+  /** Every revealed note so far (oldest first). */
+  revealed: t.array(NoteEntry),
+});
+export type NotesState = SchemaType<typeof NotesState>;

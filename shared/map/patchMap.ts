@@ -90,6 +90,8 @@ export const PATCH_MAP: MapDef = {
     { id: "bench1", type: "bench", x: 16, y: 8, w: 2, h: 1, solid: "all" },
     { id: "bench2", type: "bench", x: 21, y: 8, w: 2, h: 1, solid: "all" },
     { id: "signCider", type: "sign", x: 17, y: 11, w: 1, h: 1, solid: "all", label: "Cider Stand" },
+    // Write each other notes; they're revealed once you've both written one.
+    { id: "noteBoard", type: "noteBoard", x: 26, y: 9, w: 2, h: 1, solid: "all", label: "Note Board" },
 
     // --- North-east: corn maze entrance (the arch is decoration you walk under) ---
     { id: "mazeArch", type: "mazeArch", x: 49, y: 8, w: 4, h: 3, solid: "none" },

@@ -95,6 +95,9 @@ export const MINIGAMES = {
 } as const;
 export type MinigameId = keyof typeof MINIGAMES;
 
+/** Note board: longest note you can write. */
+export const NOTE_MAX = 280;
+
 /** Photo booth: how the shoot is timed. */
 export const BOOTH = {
   shots: 3,

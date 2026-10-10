@@ -44,7 +44,7 @@ export const LEGEND: Record<string, TileInfo> = {
 export type PropType =
   | "farmhouse" | "carvingTable" | "ciderStand" | "bench" | "sign"
   | "mazeArch" | "scarecrowPost" | "bowlingPins" | "appleBarrel" | "tossFlag"
-  | "prizeStand" | "photoBooth" | "basket" | "farmer";
+  | "prizeStand" | "photoBooth" | "basket" | "farmer" | "noteBoard";
 
 export interface PropDef {
   /** Unique name, used later to hook up interactions. */

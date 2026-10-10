@@ -65,6 +65,7 @@ to change the tune).
 | Prize stand (hats, pumpkin colors) | Tickets & Prizes booth | `activities/PrizeStand.ts`, `shared/prizes.ts` | `scenes/PrizeShop.ts`, `art/cosmetics.ts` |
 | Farmer tasks | Farmer Hollis by the farmhouse | `activities/Farmer.ts`, `shared/tasks.ts` | `world/activities/FarmerView.ts` |
 | Pumpkin-stealing crow | anywhere (every couple of minutes) | `activities/Crow.ts` | `world/activities/CrowView.ts` |
+| Note board (secret until both write) | next to the cider stand | `activities/Notes.ts` | `scenes/NoteBoard.ts`, `world/activities/NoteView.ts` |
 | Photo booth (live webcams, 3-photo strip) | inside the booth frame | `activities/PhotoBooth.ts` | `scenes/PhotoBooth.ts`, `net/BoothRtc.ts`, `art/boothArt.ts` |
 | Cider stand benches | benches by the cider stand | `activities/Benches.ts` | `world/activities/BenchView.ts`, `scenes/CiderCozy.ts` |
 | Hayride | wagon at the Hayride sign | `activities/Hayride.ts` | `world/activities/HayrideView.ts` |

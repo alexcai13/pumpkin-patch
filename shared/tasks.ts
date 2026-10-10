@@ -23,6 +23,7 @@ export const FARMER_TASKS: FarmerTask[] = [
   { id: "cider", text: "Take a break — sit on a bench by the cider stand.", goal: 1, reward: 5 },
   { id: "crow", text: "That pesky crow keeps stealing pumpkins! Chase it off for me.", goal: 1, reward: 8 },
   { id: "photo", text: "Snap a photo strip in the booth to remember the day!", goal: 1, reward: 6 },
+  { id: "note", text: "Leave each other a note on the note board by the cider stand.", goal: 1, reward: 6 },
 ];
 
 export const FARMER_NAME = "Farmer Hollis";

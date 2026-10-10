@@ -22,6 +22,7 @@ import { Minigames } from "./activities/Minigames.js";
 import { PrizeStand } from "./activities/PrizeStand.js";
 import { Farmer } from "./activities/Farmer.js";
 import { Crow } from "./activities/Crow.js";
+import { Notes } from "./activities/Notes.js";
 
 /** Fastest legal speed in px/sec (running), plus 25% slack for timing jitter. */
 const MAX_SPEED = (TILE / (RUN_STEP_MS / 1000)) * 1.25;
@@ -71,6 +72,7 @@ export class PatchRoom extends Room<{ state: PatchState }> {
   private maze!: CornMaze;
   private minigames!: Minigames;
   private crow!: Crow;
+  private notes!: Notes;
   /** Public so other activities can report farmer-task progress. */
   farmer!: Farmer;
 
@@ -136,6 +138,7 @@ export class PatchRoom extends Room<{ state: PatchState }> {
     new PrizeStand(this);
     this.farmer = new Farmer(this);
     this.crow = new Crow(this, () => this.farmer.progress("crow"));
+    this.notes = new Notes(this);
     this.state.startedAt = Date.now();
 
     // 20 updates per second for things that move on their own (wagon, crow).
@@ -208,6 +211,7 @@ export class PatchRoom extends Room<{ state: PatchState }> {
     this.scarecrow.onPlayerLeave(client.sessionId);
     this.maze.onPlayerLeave(client.sessionId);
     this.minigames.leave(client.sessionId);
+    this.notes.onPlayerLeave(client.sessionId);
     this.state.players.delete(client.sessionId);
     this.guards.delete(client.sessionId);
     // Someone who left can no longer be "missing" from the wagon.

@@ -77,3 +77,22 @@ describe("Batch C", () => {
     assert.ok(p.tickets > 0);
   });
 });
+
+describe("Note board", () => {
+  it("keeps notes secret until both have written, then reveals both", async () => {
+    const room = await colyseus.createRoom<PatchState>("patch", {});
+    const a = await colyseus.connectTo(room, { name: "A" });
+    const b = await colyseus.connectTo(room, { name: "B" });
+    a.send("notes:submit", { text: "  hi B! \u0007 " });
+    await wait(60);
+    assert.strictEqual(room.state.notes.revealed.length, 0, "not revealed yet");
+    assert.strictEqual(room.state.notes.submitted.get(a.sessionId), true);
+    // B's copy of the state must not contain A's text yet.
+    assert.ok(!JSON.stringify(b.state.toJSON()).includes("hi B!"), "text isn't synced before the reveal");
+    b.send("notes:submit", { text: "hello A" });
+    await wait(60);
+    const notes = [...room.state.notes.revealed].map((n) => `${n.author}:${n.text}`);
+    assert.deepStrictEqual(notes.sort(), ["A:hi B!", "B:hello A"]);
+    assert.strictEqual(room.state.notes.round, 2);
+  });
+});

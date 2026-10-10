@@ -26,6 +26,7 @@ import { MinigameView } from "../world/activities/MinigameView";
 import { ShopView } from "../world/activities/ShopView";
 import { FarmerView } from "../world/activities/FarmerView";
 import { CrowView } from "../world/activities/CrowView";
+import { NoteView } from "../world/activities/NoteView";
 import { DayCycle } from "../world/DayCycle";
 import { Leaves } from "../ui/Leaves";
 import { HudEvents } from "./Hud";
@@ -119,6 +120,7 @@ export class World extends Scene {
     this.mazeView = new MazeView(ctx);
     new MinigameView(ctx);
     new ShopView(ctx);
+    new NoteView(ctx);
     this.farmer = new FarmerView(ctx);
     this.crow = new CrowView(ctx);
     new SignView(ctx); // last: generic "read the sign" for signs nothing else uses

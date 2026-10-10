@@ -151,6 +151,7 @@ function shortTask(id: string) {
   const short: Record<string, string> = {
     pumpkins: "bring 5 pumpkins", hayride: "take a hayride", carve: "carve a jack-o'-lantern",
     minigame: "play a minigame", cider: "sit at the cider stand", crow: "chase off the crow", photo: "take a photo strip",
+    note: "write each other a note",
   };
   return short[id] ?? id;
 }
