@@ -60,7 +60,6 @@ describe("Batch B", () => {
     b.send("maze:enter");
     await wait(60);
     assert.strictEqual(room.state.maze.phase, "running");
-    assert.ok(room.state.maze.mapHolder === a.sessionId || room.state.maze.mapHolder === b.sessionId);
     // Skip the walking: put both in the exit.
     const maze = generateMaze(room.state.maze.seed);
     for (const c of [a, b]) {
@@ -71,6 +70,28 @@ describe("Batch B", () => {
     await wait(80);
     assert.strictEqual(room.state.maze.phase, "done");
     assert.ok(room.state.maze.finishMs > 0);
+  });
+
+  it("corn maze: leaving takes only you out; your friend can still finish alone", async () => {
+    const room = await colyseus.createRoom<PatchState>("patch", {});
+    const a = await colyseus.connectTo(room, { name: "A" });
+    const b = await colyseus.connectTo(room, { name: "B" });
+    const e = PATCH_MAP.mazeEntrance!;
+    at(room.state.players.get(a.sessionId), e.x, e.y + 2);
+    at(room.state.players.get(b.sessionId), e.x + 1, e.y + 2);
+    a.send("maze:enter"); b.send("maze:enter");
+    await wait(80);
+    assert.strictEqual(room.state.maze.phase, "running");
+    a.send("maze:leave");
+    await wait(60);
+    assert.strictEqual(room.state.maze.phase, "running", "B is still in");
+    assert.ok(!room.state.maze.players.has(a.sessionId));
+    const maze = generateMaze(room.state.maze.seed);
+    const mp = room.state.maze.players.get(b.sessionId)!;
+    mp.x = (maze.exit.x + 1) * TILE + 8; mp.y = (maze.exit.y + 1) * TILE + 8 + 16;
+    b.send("maze:move", { x: (maze.exit.x + 1) * TILE + 8, y: (maze.exit.y + 1) * TILE + 8, dir: Dir.Up, moving: true, running: false });
+    await wait(80);
+    assert.strictEqual(room.state.maze.phase, "done", "B finished alone");
   });
 
   it("bowling physics: a straight full-power roll knocks pins; a hard-angled one gutters", () => {

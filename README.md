@@ -44,7 +44,7 @@ shares the code, the other types it and clicks **Join Room**.
 
 Arrows / WASD to walk, Shift to run, **E or Space** to use whatever you're
 facing (a prompt shows when something's usable), **1-4** for emotes,
-**M** to mute.
+**M** to mute (in the corn maze, M shows/hides your map instead).
 
 Tickets come from activities, the farmer's tasks and catching the crow; spend
 them at the prize stand. The patch slowly goes from day to dusk and back

@@ -41,7 +41,11 @@ export class Hud extends Scene {
       .setOrigin(1, 1).setPadding(6, 4, 6, 4).setBackgroundColor("#2a1a14cc")
       .setInteractive({ useHandCursor: true })
       .on("pointerdown", () => { Sound.unlock(); Sound.toggleMute(); this.refreshMute(); });
-    this.input.keyboard!.on("keydown-M", () => { Sound.toggleMute(); this.refreshMute(); });
+    // (Inside the corn maze, M is the map key instead.)
+    this.input.keyboard!.on("keydown-M", () => {
+      if (this.scene.isActive("CornMaze")) return;
+      Sound.toggleMute(); this.refreshMute();
+    });
     this.refreshMute();
     this.waitText = this.add.text(12, 34, "", textStyle(14, "#f1e3c2"));
     this.add.text(12, this.scale.height - 26, "Move: Arrows / WASD    Run: Shift    Use: E / Space    Emotes: 1-4", textStyle(13, "#f1e3c2"))

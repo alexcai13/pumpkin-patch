@@ -121,8 +121,6 @@ export const MazeState = schema({
   finishMs: t.uint32(),
   /** Fastest finish this session (0 = none yet). */
   bestMs: t.uint32(),
-  /** sessionId of the player holding the map (they see only a little around them). */
-  mapHolder: t.string().default(""),
   /** Players inside, keyed by sessionId. */
   players: t.map(MazePlayerState),
 });

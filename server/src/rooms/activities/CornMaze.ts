@@ -17,8 +17,9 @@ const DONE_PAUSE_MS = 6000;
  * CORN MAZE (co-op)
  * Press E at the maze arch to get in line; when everyone in the room is in
  * line, a fresh maze is generated (from a random seed) and both players go
- * in. One player holds the MAP but can only see a little circle around
- * themselves; the other sees everything but has no map — talk to each other!
+ * in. It's dark in the corn — each player only sees a little circle
+ * around themselves, with a map they can show/hide (M). Anyone can walk out
+ * at any time (Esc / "Leave maze"); whoever's left can still finish.
  * The run ends when both stand in the exit clearing.
  *
  * Movement inside the maze uses "maze:move" (positions live in
@@ -27,14 +28,13 @@ const DONE_PAUSE_MS = 6000;
 export class CornMaze {
   private maze?: Maze;
   private grid?: CollisionGrid;
-  private runs = 0;
 
   constructor(private room: PatchRoom) {
     room.state.maze = new MazeState();
     room.onMessage("maze:enter", (client: Client) => this.enter(client));
     room.onMessage("maze:cancel", (client: Client) => { const p = room.state.players.get(client.sessionId); if (p) p.mazeReady = false; });
     room.onMessage("maze:move", (client: Client, msg: MoveMessage) => this.move(client, msg));
-    room.onMessage("maze:leave", (client: Client) => this.end(`${room.state.players.get(client.sessionId)?.name ?? "Someone"} left the maze.`));
+    room.onMessage("maze:leave", (client: Client) => this.leave(client.sessionId));
   }
 
   private get m() { return this.room.state.maze; }
@@ -70,9 +70,6 @@ export class CornMaze {
       this.m.players.set(id, new MazePlayerState({ x: s.x * TILE + TILE / 2, y: s.y * TILE + TILE / 2, dir: Dir.Up, moving: false }));
       this.room.state.players.get(id)!.mazeReady = false;
     });
-    // Take turns holding the map.
-    this.m.mapHolder = ids.length > 1 ? ids[this.runs % ids.length] : "";
-    this.runs++;
     this.m.finishMs = 0;
     this.m.startedAt = Date.now();
     this.m.phase = "running";
@@ -118,14 +115,28 @@ export class CornMaze {
     });
     this.m.players.clear();
     this.m.phase = "idle";
-    this.m.mapHolder = "";
     if (reason) this.room.broadcast("toast", { text: reason });
   }
 
-  onPlayerLeave(sessionId: string) {
-    if (this.isInMaze(sessionId)) {
-      this.m.players.delete(sessionId);
-      this.end("Your friend left, so the maze run ended.");
+  /**
+   * One player walks out of the maze (any time). They go back to the arch;
+   * anyone still inside can keep going and finish on their own.
+   */
+  leave(sessionId: string) {
+    if (!this.isInMaze(sessionId)) return;
+    const name = this.room.state.players.get(sessionId)?.name ?? "Someone";
+    this.m.players.delete(sessionId);
+    const client = this.room.clientOf(sessionId);
+    if (client) this.room.teleport(client, RETURN_TILES[0].x * TILE + TILE / 2, RETURN_TILES[0].y * TILE + TILE / 2);
+    if (this.m.players.size === 0) { this.end(); return; }
+    for (const id of this.m.players.keys()) {
+      this.room.clientOf(id)?.send("toast", { text: `${name} left the maze — you can still find the exit on your own!` });
     }
+    // The ones still inside might already be standing at the exit.
+    if (this.m.phase === "running") this.checkFinish();
+  }
+
+  onPlayerLeave(sessionId: string) {
+    this.leave(sessionId);
   }
 }

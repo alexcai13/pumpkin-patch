@@ -23,12 +23,10 @@ const FOG_RADIUS = 52;
 /**
  * CORN MAZE (its own map)
  * The maze is generated from the seed the server picked, so both players get
- * the same one. Roles:
- *  - MAP HOLDER: sees a map of the whole maze (top-right) but only a small
- *    circle around themselves.
- *  - EXPLORER: sees everything around them normally, but has no map.
- * Talk to each other! Both reach the exit clearing (top) to finish.
- * Solo runs get the map and full vision.
+ * the same one. It's dark in the corn: everyone sees only a small circle
+ * around themselves, with a map of the whole maze in the corner (M shows /
+ * hides it). Reach the exit clearing (top) together to finish. You can leave
+ * any time (Esc or the button); whoever stays can still finish.
  */
 export class CornMaze extends Phaser.Scene {
   private onExit?: () => void;
@@ -39,6 +37,10 @@ export class CornMaze extends Phaser.Scene {
   private friend?: { id: string; character: Character; interp: Interpolator; state: MazePlayerState; lastX: number; lastY: number };
   private fog?: Phaser.GameObjects.Image;
   private minimapDots?: Phaser.GameObjects.Graphics;
+  private minimapBg?: Phaser.GameObjects.Graphics;
+  /** Shown by default; M toggles it (remembered for next time). */
+  private mapVisible = true;
+  private minimapBottom = 14;
   private minimapOrigin = { x0: 0, y0: 0, cell: 1 };
   private hudCam!: Phaser.Cameras.Scene2D.Camera;
   private timerText!: Phaser.GameObjects.Text;
@@ -112,22 +114,27 @@ export class CornMaze extends Phaser.Scene {
       }));
     }
 
-    // Roles
-    const solo = this.m.players.size <= 1;
-    const iHaveMap = solo || this.m.mapHolder === this.myId;
-    const iHaveFog = !solo && this.m.mapHolder === this.myId;
-    if (iHaveFog) this.makeFog();
+    // It's dark in the corn for everyone: you only see a little circle around you.
+    this.makeFog();
 
     // HUD: a second camera at zoom 1 that only draws HUD things, so text and
     // the minimap stay crisp and fixed on screen.
     this.hudCam = this.cameras.add(0, 0, this.scale.width, this.scale.height);
     this.timerText = this.hud(this.add.text(this.scale.width / 2, 12, "", hudStyle(22, P.goldLight)).setOrigin(0.5, 0));
-    const roleLine = solo ? "Solo run: find the EXIT at the top!" :
-      iHaveMap ? "🗺 You have the MAP, but it's dark… guide your friend!" : "👀 You can see, but have no map. Ask your friend which way!";
-    // Role line at the bottom (the top is busy with the timer, HUD and minimap).
-    this.roleText = this.hud(this.add.text(this.scale.width / 2, this.scale.height - 56, roleLine, hudStyle(15)).setOrigin(0.5, 0));
-    this.hud(this.add.text(this.scale.width - 12, this.scale.height - 26, "Esc: give up", hudStyle(12)).setOrigin(1, 0).setAlpha(0.8));
-    if (iHaveMap) this.makeMinimap();
+    const helpLine = this.m.players.size <= 1
+      ? "It's dark in the corn… find the EXIT at the top!   M: show/hide map"
+      : "It's dark in the corn… find the EXIT together!   M: show/hide map";
+    // Help line at the bottom (the top is busy with the timer, HUD and minimap).
+    this.roleText = this.hud(this.add.text(this.scale.width / 2, this.scale.height - 56, helpLine, hudStyle(15)).setOrigin(0.5, 0));
+    this.makeMinimap();
+    // Leave any time: a button just under the map (and Esc).
+    this.hud(this.add.text(this.scale.width - 14, this.minimapBottom + 10, "🚪 Leave maze (Esc)", hudStyle(14))
+      .setOrigin(1, 0).setPadding(8, 5, 8, 5).setBackgroundColor("#2a1a14cc")
+      .setInteractive({ useHandCursor: true }).on("pointerdown", () => room.send("maze:leave")));
+    this.input.keyboard!.on("keydown-M", () => this.toggleMap());
+    let saved = "1";
+    try { saved = localStorage.getItem("pumpkin-patch-maze-map") ?? "1"; } catch { /* ignore */ }
+    if (saved === "0") { this.mapVisible = true; this.toggleMap(); }
     // The world camera ignores HUD things; the HUD camera ignores everything else.
     cam.ignore(this.hudObjects);
     this.hudCam.ignore(this.children.list.filter((o) => !this.hudObjects.includes(o)));
@@ -142,6 +149,13 @@ export class CornMaze extends Phaser.Scene {
       this.unbinds = [];
       this.input.keyboard?.removeAllListeners();
     });
+  }
+
+  private toggleMap() {
+    this.mapVisible = !this.mapVisible;
+    this.minimapBg?.setVisible(this.mapVisible);
+    this.minimapDots?.setVisible(this.mapVisible);
+    try { localStorage.setItem("pumpkin-patch-maze-map", this.mapVisible ? "1" : "0"); } catch { /* ignore */ }
   }
 
   /** Register a HUD object (drawn only by the HUD camera). */
@@ -175,6 +189,7 @@ export class CornMaze extends Phaser.Scene {
     const w = this.maze.width * cell, h = this.maze.height * cell;
     const x0 = this.scale.width - w - 14, y0 = 14;
     const g = this.hud(this.add.graphics());
+    this.minimapBg = g;
     g.fillStyle(0x2a1a14, 0.9).fillRect(x0 - 4, y0 - 4, w + 8, h + 8);
     this.maze.map.rows.forEach((row, ty) => {
       for (let tx = 0; tx < row.length; tx++) {
@@ -185,6 +200,7 @@ export class CornMaze extends Phaser.Scene {
     g.fillStyle(0x8be04e).fillRect(x0 + ex.x * cell, y0 + ex.y * cell, ex.w * cell, ex.h * cell);
     this.minimapDots = this.hud(this.add.graphics());
     this.minimapOrigin = { x0, y0, cell };
+    this.minimapBottom = y0 + h + 4;
   }
 
   update(_time: number, delta: number) {
@@ -207,6 +223,11 @@ export class CornMaze extends Phaser.Scene {
       this.fog?.setPosition(Math.round(this.me.x), Math.round(this.me.y));
     }
 
+    // Friend walked out of the maze: fade their character away.
+    if (this.friend && !m.players.has(this.friend.id)) {
+      this.friend.character.fadeOutAndDestroy();
+      this.friend = undefined;
+    }
     if (this.friend) {
       const f = this.friend;
       const { x, y } = f.interp.sample();
