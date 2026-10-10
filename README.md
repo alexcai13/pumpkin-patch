@@ -2,6 +2,8 @@
 
 A cozy 2-player online pumpkin patch, in the style of an old handheld overworld.
 
+**Play:** <https://pumpkin-patch-pi.vercel.app> (game server: `pumpkin-patch-server.onrender.com`)
+
 ```
 client/   Phaser 4 game (Vite + TypeScript)       → http://localhost:8080
 server/   Colyseus 0.18 game server (TypeScript)   → ws://localhost:2567

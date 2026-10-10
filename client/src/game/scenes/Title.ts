@@ -118,6 +118,10 @@ export class Title extends Scene {
       }
       saveProfile({ name, color });
       setBusy(true, mode === "create" ? "Planting your patch…" : "Walking over to your friend's patch…");
+      // The free server host sleeps when nobody's playing; waking it takes a while.
+      const slow = window.setTimeout(() => {
+        setBusy(true, "Waking up the farm server… the first visit in a while can take up to a minute 🌙");
+      }, 6000);
       try {
         if (mode === "create") await Network.createRoom({ name, color });
         else await Network.joinRoom(code, { name, color });
@@ -125,6 +129,8 @@ export class Title extends Scene {
       } catch (err) {
         console.error(err);
         setBusy(false, describeJoinError(err));
+      } finally {
+        window.clearTimeout(slow);
       }
     };
     createBtn.onclick = () => go("create");

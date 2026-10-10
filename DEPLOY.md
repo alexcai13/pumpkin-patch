@@ -1,5 +1,10 @@
 # Deploying Pumpkin Patch Pals
 
+**Live now:** site <https://pumpkin-patch-pi.vercel.app> (Vercel project `pumpkin-patch`,
+auto-deploys on every push to `main`) · server <https://pumpkin-patch-server.onrender.com>
+(Render service `pumpkin-patch-server`, deployed from the public repo URL — after
+changing server code, click **Manual Deploy → Deploy latest commit** in Render).
+
 Two pieces go online separately:
 
 | Piece | Where | Folder |
