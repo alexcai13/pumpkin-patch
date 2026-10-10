@@ -29,6 +29,9 @@ const ICE_SERVERS: RTCIceServer[] = [
     : []),
 ];
 
+/** Give up on a connection attempt that hasn't connected after this long. */
+const CONNECT_TIMEOUT_MS = 15000;
+
 export type RtcStatus = "idle" | "connecting" | "connected" | "failed";
 
 export class BoothRtc {
@@ -130,6 +133,11 @@ export class BoothRtc {
     this.status = "connecting";
     pc.onicecandidate = (e) => { if (e.candidate) this.send({ kind: "ice", candidate: e.candidate.toJSON() }); };
     pc.ontrack = (e) => { this.remoteStream = e.streams[0] ?? new MediaStream([e.track]); };
+    // Some networks never say "failed", they just keep trying forever.
+    // Call it failed after a while so the caller starts over.
+    window.setTimeout(() => {
+      if (pc === this.pc && this.status === "connecting") this.status = "failed";
+    }, CONNECT_TIMEOUT_MS);
     pc.onconnectionstatechange = () => {
       if (pc !== this.pc) return;
       if (pc.connectionState === "connected") this.status = "connected";

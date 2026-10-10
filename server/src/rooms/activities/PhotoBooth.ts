@@ -16,18 +16,28 @@ const INSIDE = { x: BOOTH_PROP.x + 1, y: BOOTH_PROP.y + 2 };
  *  2. Relays WebRTC setup messages ("rtc") between the two players so their
  *     browsers can connect directly for live video. The video never passes
  *     through the server.
- *  3. Runs the shared timer: 3-2-1 → "booth:snap" (×4). Each browser takes
+ *  3. Fallback video: if the two browsers can't connect directly (some
+ *     home/school/phone networks block it), each sends small JPEG frames of
+ *     its camera as "booth:frame" bytes, and we pass those along instead.
+ *  4. Runs the shared timer: 3-2-1 → "booth:snap" (×4). Each browser takes
  *     the photos itself from the two video feeds it's showing, so both end
  *     up with the same strip.
  */
+/** Biggest fallback video frame we'll pass on (bytes). */
+const MAX_FRAME_BYTES = 48 * 1024;
+/** At most this many fallback frames per second, per player. */
+const MAX_FRAME_RATE = 12;
+
 export class PhotoBooth {
   private timer?: Delayed;
+  private lastFrameAt = new Map<string, number>();
 
   constructor(private room: PatchRoom) {
     room.onMessage("booth:enter", (client: Client) => this.enter(client));
     room.onMessage("booth:leave", (client: Client) => this.leave(client.sessionId));
     room.onMessage("booth:start", (client: Client) => this.start(client));
     room.onMessage("rtc", (client: Client, signal: RtcSignal) => this.relay(client, signal));
+    room.onMessageBytes("booth:frame", (client: Client, bytes: Uint8Array) => this.relayFrame(client, bytes));
   }
 
   private get booth() { return this.room.state.booth; }
@@ -55,6 +65,7 @@ export class PhotoBooth {
   leave(sessionId: string) {
     const player = this.room.state.players.get(sessionId);
     if (player) player.inBooth = false;
+    this.lastFrameAt.delete(sessionId);
     // Nobody left to photograph: cancel a shoot in progress.
     if (this.members().filter(([id]) => id !== sessionId).length === 0) {
       this.timer?.clear();
@@ -114,6 +125,18 @@ export class PhotoBooth {
       if (id === client.sessionId) continue;
       const out: RtcRelay = { from: client.sessionId, signal };
       this.room.clientOf(id)?.send("rtc", out);
+    }
+  }
+
+  /** Pass a fallback camera frame (JPEG bytes) to the other player in the booth. */
+  private relayFrame(client: Client, bytes: Uint8Array) {
+    if (!(bytes instanceof Uint8Array) || bytes.length === 0 || bytes.length > MAX_FRAME_BYTES) return;
+    if (!this.room.state.players.get(client.sessionId)?.inBooth) return;
+    const now = Date.now();
+    if (now - (this.lastFrameAt.get(client.sessionId) ?? 0) < 1000 / MAX_FRAME_RATE) return;
+    this.lastFrameAt.set(client.sessionId, now);
+    for (const [id] of this.members()) {
+      if (id !== client.sessionId) this.room.clientOf(id)?.sendBytes("booth:frame", bytes);
     }
   }
 }
